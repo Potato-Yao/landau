@@ -19,15 +19,16 @@ impl Known for i32 {
 }
 
 type Container = Vec<Box<dyn Known>>;
+type CalcContainer = fn(Container, Container) -> Option<f64>;
 
 #[derive(Debug)]
 pub struct Function {
     name: String,
-    calc: fn(Container) -> Option<f64>,
+    calc: CalcContainer,
 }
 
 impl Function {
-    pub fn new(name: &str, calc: fn(Container) -> Option<f64>) -> Self {
+    pub fn new(name: &str, calc: CalcContainer) -> Self {
         Function {
             name: name.to_string(),
             calc,
@@ -41,7 +42,7 @@ fn div(a: f64, b: f64) -> Option<f64> {
         None
     } else {
         Some(a / b)
-    }
+    };
 }
 
 static mut EXTERN_FUNCTION: Vec<Function> = Vec::new();
@@ -49,11 +50,11 @@ static mut EXTERN_FUNCTION: Vec<Function> = Vec::new();
 lazy_static! {
     static ref BUILD_IN_FUNCTION: Vec<Function> = {
         let mut table = Vec::new();
-        table.push(Function::new("frac", |v| {
-            div(v[0].get_value().unwrap(), v[1].get_value().unwrap())
+        table.push(Function::new("frac", |o, r| {
+            div(r[0].get_value().unwrap(), r[1].get_value().unwrap())
         }));
-        table.push(Function::new("sqrt", |v| {
-            nth_root(v[1].get_value().unwrap(), v[0].get_value().unwrap() as i32)
+        table.push(Function::new("sqrt", |o, r| {
+            nth_root(r[0].get_value().unwrap(), o[0].get_value().unwrap() as i32)
         }));
 
         table
@@ -70,7 +71,8 @@ pub fn register_extern_function(fun: Function) -> Result<(), String> {
 /// build-in functions take the priority,
 /// so if there`s an extern function which has a same name as a build-in function,
 /// the extern function will never be gotten
-pub fn get_function<'a>(name: String) -> Option<&'a Function> {
+pub fn get_function<'a>(name: &String) -> Option<&'a Function> {
+    let name = name.clone();
     if let Some(fun) =
         BUILD_IN_FUNCTION.iter().find(|f| f.name == name)
     {
@@ -96,33 +98,33 @@ mod tests {
     fn function_test() {
         let frac = Function {
             name: "frac".to_string(),
-            calc: |v| {
-                Some(v[0].get_value().unwrap() / v[1].get_value().unwrap())
+            calc: |o, r| {
+                Some(r[0].get_value().unwrap() / r[1].get_value().unwrap())
             },
         };
 
-        let a = (frac.calc)(vec![Box::new(1.0), Box::new(2.0)]);
+        let a = (frac.calc)(vec![], vec![Box::new(1.0), Box::new(2.0)]);
         assert_eq!(a.unwrap(), 0.5);
 
-        let a = (frac.calc)(vec![Box::new(3.0), Box::new(2.0)]);
+        let a = (frac.calc)(vec![], vec![Box::new(3.0), Box::new(2.0)]);
         assert_eq!(a.unwrap(), 1.5);
     }
 
     #[test]
     fn get_function_test() {
-        let fun = get_function("frac".to_string()).unwrap();
+        let fun = get_function(&"frac".to_string()).unwrap();
         assert_eq!(fun.name, "frac");
-        assert_eq!((fun.calc)(vec![Box::new(1.0), Box::new(2.0)]).unwrap(), 0.5);
+        assert_eq!((fun.calc)(vec![], vec![Box::new(1.0), Box::new(2.0)]).unwrap(), 0.5);
     }
 
     #[test]
     fn register_function_test() {
-        let re = Function::new("double", |v| {
-            Some(v[0].get_value().unwrap() * 2.0)
+        let re = Function::new("double", |o, r| {
+            Some(r[0].get_value().unwrap() * 2.0)
         });
 
         register_extern_function(re).expect("Register function failed!");
-        let fun = get_function("double".to_string()).unwrap();
-        assert_eq!((fun.calc)(vec![Box::new(10.0)]).unwrap(), 20.0);
+        let fun = get_function(&"double".to_string()).unwrap();
+        assert_eq!((fun.calc)(vec![], vec![Box::new(10.0)]).unwrap(), 20.0);
     }
 }

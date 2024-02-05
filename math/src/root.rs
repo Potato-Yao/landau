@@ -1,5 +1,7 @@
 pub fn nth_root(x: f64, n: i32) -> Option<f64> {
     if x < 0.0 && n % 2 == 0 {
+        // which will produce a complex number and I don`t
+        // want to implement methods about complex numbers yet
         return None;
     }
     if n == 0 {

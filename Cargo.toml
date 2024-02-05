@@ -15,6 +15,7 @@ members = [
 
 [dependencies]
 math = { path = "math" }
+latex_analyzer = { path = "latex_analyzer" }
 
 lazy_static = "1.4.0"
 num = "0.4.1"

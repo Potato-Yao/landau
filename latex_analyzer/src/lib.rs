@@ -1,4 +1,4 @@
-mod lex;
+pub mod lex;
 
 #[cfg(test)]
 mod tests {
