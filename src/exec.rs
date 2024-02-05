@@ -1,5 +1,5 @@
 use latex_analyzer::lex::{Lex, Proto, Token};
-use crate::function::{Function, get_function};
+use crate::function::{Function, get_function, HUGE_SYMBOL};
 
 pub struct Exec {
     proto: Proto,
@@ -26,9 +26,15 @@ impl Exec {
                 Token::Function(fun, op, re) => {
                     let fun = get_function(fun).unwrap();
                     function_stack.push(fun);
+
+                    for i in HUGE_SYMBOL.iter() {
+                        if fun.name == i.clone() {
+                            huge_symbol = true;
+                            break;
+                        }
+                    }
                 }
                 Token::Subscript(e) => {
-
                 }
                 Token::Expression(e) => {
 
