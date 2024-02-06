@@ -23,10 +23,13 @@ pub enum Token {
     SquareL,
     // ]
     SquareR,
+    // }
+    // we need } to divide blocks
+    BraceR,
     // the string of Pow and Subscript is the expression of a ^ or _
     // for example, ^2 will be turned to Pow("2"), ^{2} will be turned to it as well
     // _{22} will be turned to Subscript("22")
-    Pow(String),
+    Superscript(String),
     Subscript(String),
     Dot,
     Eos,
@@ -58,7 +61,10 @@ impl Lex {
         let mut vec = Vec::new();
         loop {
             match self.next() {
-                Token::Eos => break,
+                Token::Eos => {
+                    vec.push(Token::Eos);
+                    break;
+                }
                 t => match t {
                     Token::Expression(e) if e.is_empty() => (),
                     t => vec.push(t),
@@ -88,14 +94,14 @@ impl Lex {
             ']' => Token::SquareR,
             ',' => Token::Dot,
 
-            '^' => Token::Pow(self.read_pure_string(None)),
+            '^' => Token::Superscript(self.read_pure_string(None)),
             '_' => Token::Subscript(self.read_pure_string(None)),
             'a'..='z' | 'A'..='Z' => {
                 self.put_back();
                 Token::Expression(self.read_pure_string(None))
             }
             '{' => Token::Expression(self.read_expression()),
-            '}' => self.next(),
+            '}' => Token::BraceR,
 
             _ => panic!("I can`t read char: {ch}"),
         }
@@ -323,7 +329,7 @@ mod tests {
 
     #[test]
     fn parse_test4() {
-        let test4 = "\\int_a^b{}x\\d{}x".to_string();
+        let test4 = "\\int_a^b{x}\\d{}x".to_string();
         let mut l4 = Lex::new(test4);
         let v4 = l4.parse();
 
