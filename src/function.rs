@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use math::root::nth_root;
-use crate::buildin_function::int;
+use crate::buildin_function::{int, sum};
 
 /// An type who impls Known can return a certain value just by itself.
 pub trait Known {
@@ -26,13 +26,15 @@ type CalcContainer = fn(Container, Container) -> Option<f64>;
 pub struct Function {
     pub name: String,
     pub calc: CalcContainer,
+    pub required_args_count: u8,
 }
 
 impl Function {
-    pub fn new(name: &str, calc: CalcContainer) -> Self {
+    pub fn new(name: &str, calc: CalcContainer, required_args_count: u8) -> Self {
         Function {
             name: name.to_string(),
             calc,
+            required_args_count,
         }
     }
 }
@@ -44,15 +46,20 @@ lazy_static! {
         let mut table = Vec::new();
         table.push(Function::new("frac", |o, r| {
             crate::buildin_function::div(r[0].get_value().unwrap(), r[1].get_value().unwrap())
-        }));
+        }, 2));
         table.push(Function::new("sqrt", |o, r| {
             nth_root(r[0].get_value().unwrap(), o[0].get_value().unwrap() as i32)
-        }));
+        }, 1));
         table.push(Function::new("int", |o, r| {
             let r = r.iter()
                 .map(|x| x.get_value().unwrap()).collect();
             int(o[0].get_value().unwrap(), o[1].get_value().unwrap(), r)
-        }));
+        }, 1));
+        table.push(Function::new("sum", |o, r| {
+            let r = r.iter()
+                .map(|x| x.get_value().unwrap()).collect();
+            sum(r)
+        }, 1));
 
         table
     };
@@ -79,23 +86,23 @@ pub fn register_extern_function(fun: Function) -> Result<(), String> {
 /// build-in functions take the priority,
 /// so if there`s an extern function which has a same name as a build-in function,
 /// the extern function will never be gotten
-pub fn get_function<'a>(name: &String) -> Option<&'a Function> {
+pub fn get_function<'a>(name: &String) -> Result<&'a Function, String> {
     let name = name.clone();
     if let Some(fun) =
         BUILD_IN_FUNCTION.iter().find(|f| f.name == name)
     {
-        return Some(fun);
+        return Ok(fun);
     } else {
         unsafe {
             if let Some(fun) =
                 EXTERN_FUNCTION.iter().find(|f| f.name == name)
             {
-                return Some(fun);
+                return Ok(fun);
             }
         }
     }
 
-    None
+    Err(format!("Can`t get the function: {name}"))
 }
 
 #[cfg(test)]
@@ -109,6 +116,7 @@ mod tests {
             calc: |o, r| {
                 Some(r[0].get_value().unwrap() / r[1].get_value().unwrap())
             },
+            required_args_count: 2,
         };
 
         let a = (frac.calc)(vec![], vec![Box::new(1.0), Box::new(2.0)]);
@@ -129,7 +137,7 @@ mod tests {
     fn register_function_test() {
         let re = Function::new("double", |o, r| {
             Some(r[0].get_value().unwrap() * 2.0)
-        });
+        }, 1);
 
         register_extern_function(re).expect("Register function failed!");
         let fun = get_function(&"double".to_string()).unwrap();

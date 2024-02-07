@@ -1,7 +1,18 @@
+//! [crate::lex] used to converts LaTeX expressions into Vec<Token> (also called Proto)
+//!
+//! TODO: fix the terrible ownership in this file
 use std::fs::File;
 use std::io::{Read};
+use std::string::ToString;
+use lazy_static::lazy_static;
 
-#[derive(PartialEq, Debug)]
+lazy_static! {
+    static ref HUGE_SYMBOL: Vec<String> = {
+        vec!["int".to_string(), "sum".to_string(), "prod".to_string()]
+    };
+}
+
+#[derive(PartialEq, Debug, Clone)]
 pub enum Token {
     // such as "ax^2 + bx + c"
     Expression(String),
@@ -12,13 +23,13 @@ pub enum Token {
     Div,
     Sub,
     Times,
-    // in fact, I think () [] should be expressed as LPar(String)
-    // but the nested expression will be too complex to parse
+    // in fact, I think () [] should be represented as ParL(String)
+    // but the nested expression would be too complex to parse
     // so just leave this work to exec :)
     // (
-    LPar,
+    ParL,
     // )
-    RPar,
+    ParR,
     // [
     SquareL,
     // ]
@@ -26,8 +37,8 @@ pub enum Token {
     // }
     // we need } to divide blocks
     BraceR,
-    // the string of Pow and Subscript is the expression of a ^ or _
-    // for example, ^2 will be turned to Pow("2"), ^{2} will be turned to it as well
+    // the string of Superscript and Subscript is the expression of a ^ or _
+    // for example, ^2 will be turned to Superscript("2"), ^{2} will be turned to it as well
     // _{22} will be turned to Subscript("22")
     Superscript(String),
     Subscript(String),
@@ -72,7 +83,32 @@ impl Lex {
             }
         }
 
-        vec
+        Lex::post_process(vec).unwrap()
+    }
+
+    fn post_process(proto: Proto) -> Result<Proto, String> {
+        let mut proto = proto.into_iter();
+        let mut vec = Vec::<Token>::new();
+
+        loop {
+            let po = proto.next();
+            if po.is_none() {
+                break;
+            }
+            if let Token::Function(fun, _, _) = po.clone().unwrap() {
+                if HUGE_SYMBOL.contains(&fun) {
+                    let (sub, sup) = match (proto.next(), proto.next()) {
+                        (Some(Token::Subscript(sub)), Some(Token::Superscript(sup))) => (sub.clone(), sup.clone()),
+                        _ => return Err(format!("function {fun} miss args!")),
+                    };
+                    vec.push(Token::Function(fun.clone(), vec![sub, sup], vec![]))
+                }
+            } else {
+                vec.push(po.unwrap());
+            }
+        }
+
+        Ok(vec)
     }
 
     fn next(&mut self) -> Token {
@@ -88,42 +124,55 @@ impl Lex {
             '-' => Token::Sub,
             '/' => Token::Div,
             '*' => Token::Times,
-            '(' => Token::LPar,
-            ')' => Token::RPar,
+            '(' => Token::ParL,
+            ')' => Token::ParR,
             '[' => Token::SquareL,
             ']' => Token::SquareR,
             ',' => Token::Dot,
 
-            '^' => Token::Superscript(self.read_pure_string(None)),
-            '_' => Token::Subscript(self.read_pure_string(None)),
+            // '^' => Token::Superscript(self.read_pure_string(None)),
+            // '_' => Token::Subscript(self.read_pure_string(None)),
+            '_' => Token::Subscript(self.read_subscript()),
+            '^' => Token::Superscript(self.read_subscript()),
             'a'..='z' | 'A'..='Z' => {
                 self.put_back();
-                Token::Expression(self.read_pure_string(None))
+                Token::Expression(self.read_pure_string())
             }
-            '{' => Token::Expression(self.read_expression()),
+            '{' => Token::Expression(self.read_until_brace_r()),
             '}' => Token::BraceR,
 
             _ => panic!("I can`t read char: {ch}"),
         }
     }
 
+    /// Note: This function does not verify whether the number of arguments provided
+    /// matches the expected number for the function it parses.
+    ///
+    /// For example, "\\frac{\\mu{}c_p}{k}" will be parsed as Function("frac", [], \["\\mu{}c_p", "k"]),
+    /// However, "\\frac{\\mu{}c_p}{k}{s}" will be parsed as Function("frac", [], \["\\mu{}c_p", "k", "s"]).
+    ///
+    /// Treason for not addressing this issue is that the function "get_function"
+    /// resides in another crate and I don`t want to break the modularity and independence
+    /// of this crate.
+    /// Moreover, it is not our duty to validate if the LaTeX input has anything wrong.
+    /// If incorrect LaTeX is provided, we can throw an error in exec :)
     fn read_function(&mut self) -> Token {
         let name: String;
         let mut optional_args = Vec::<String>::new();
         let mut required_args = Vec::<String>::new();
 
-        name = self.read_pure_string(None);
+        name = self.read_pure_string();
 
         loop {
             match self.read_char() {
                 '[' => {
-                    match self.read_pure_string(None) {
+                    match self.read_pure_string() {
                         s if s.is_empty() => (),
                         s => optional_args.push(s),
                     }
                 }
                 '{' => {
-                    match self.read_expression() {
+                    match self.read_until_brace_r() {
                         s if s.is_empty() => (),
                         s => required_args.push(s),
                     }
@@ -160,14 +209,11 @@ impl Lex {
         s
     }
 
-    /// contains numbers, letters, ^, _ and paired {}
-    /// decimal is also contained
-    /// It is worth noticing that if a string starts with { and ends with },
-    /// the first { and the last } will not be contained.
-    /// If { and } can`t not pair to each other for some reason, the { and } will
-    /// not be deleted.
-    /// See fn read_expression_test() for a visual example.
-    fn read_expression(&mut self) -> String {
+    /// If the input string begins with a '{', this function will read until it finds the
+    /// corresponding '}' that pairs with the initial '{'.
+    /// If the input string does not start with a '{', the function will read until it encounters
+    /// a standalone '}'.
+    fn read_until_brace_r(&mut self) -> String {
         let mut count = 0;
 
         let mut s = self.read_string(|ch| {
@@ -178,7 +224,7 @@ impl Lex {
                 }
                 '}' => {
                     if count > 0 {
-                        count -= 0;
+                        count -= 1;
                         true
                     } else {
                         false
@@ -186,6 +232,8 @@ impl Lex {
                 }
                 _ => {
                     ch.is_alphanumeric() || ch == '_' || ch == '^' || ch == '.'
+                        || ch == '+' || ch == '-' || ch == '*' || ch == '/'
+                        || ch == ' ' || ch == '\\'
                 }
             }
         });
@@ -194,8 +242,8 @@ impl Lex {
             "".to_string()
         } else if s.chars().next().unwrap() == '{'
             && s.chars().last().unwrap() == '}' {
-            s.drain(..1);  // remove the first char, which is {
-            s.pop();  // remove the last char, which is }
+            s.drain(..1);  // remove the first char, which is a '{'
+            s.pop();  // remove the last char, which is a '}'
             s
         } else {
             s
@@ -203,13 +251,17 @@ impl Lex {
     }
 
     /// Contains letters, numbers and decimal
-    /// if set '_' as unlimited, then _ will be contained as well.
-    fn read_pure_string(&mut self, unlimited: Option<char>) -> String {
-        if unlimited.is_none() {
-            self.read_string(|ch| ch.is_alphanumeric() || ch == '.')
-        } else {
-            self.read_string(|ch| ch.is_alphanumeric() || ch == '.'
-                || ch == unlimited.unwrap())
+    fn read_pure_string(&mut self) -> String {
+        self.read_string(|ch| ch.is_alphanumeric() || ch == '.')
+    }
+
+    fn read_subscript(&mut self) -> String {
+        match self.read_char() {
+            '{' => {
+                self.put_back();
+                self.read_until_brace_r()
+            }
+            c => String::from(c)
         }
     }
 
@@ -246,19 +298,17 @@ mod tests {
     #[test]
     fn read_pure_string_test() {
         let mut l = Lex::new("ax^2".to_string());
-        let mut l1 = Lex::new("ax^2".to_string());
 
-        assert_eq!(l.read_pure_string(None), "ax".to_string());
-        assert_eq!(l1.read_pure_string(Some('^')), "ax^2".to_string());
+        assert_eq!(l.read_pure_string(), "ax".to_string());
     }
 
     #[test]
-    fn read_expression_test() {
+    fn read_until_brace_r_test() {
         let mut l = Lex::new("{aaa}".to_string());
         let mut l1 = Lex::new("a_b^c".to_string());
 
-        assert_eq!(l.read_expression(), "aaa".to_string());
-        assert_eq!(l1.read_expression(), "a_b^c".to_string());
+        assert_eq!(l.read_until_brace_r(), "aaa".to_string());
+        assert_eq!(l1.read_until_brace_r(), "a_b^c".to_string());
     }
 
     #[test]

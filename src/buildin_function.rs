@@ -1,5 +1,3 @@
-use crate::function::Function;
-
 /// a / b
 pub(crate) fn div(a: f64, b: f64) -> Option<f64> {
     return if b == 0.0 {
@@ -22,8 +20,27 @@ pub(crate) fn int(lo: f64, up: f64, po: Vec<f64>) -> Option<f64> {
     Some(fa * nu)
 }
 
+pub(crate) fn sum(po: Vec<f64>) -> Option<f64> {
+    if po.is_empty() {
+        return None;
+    }
+
+    Some(po.iter().sum())
+}
+
 pub fn int_auto_filler(fun: fn(f64) -> f64, lo: f64, up: f64) -> Vec<f64> {
     vec![fun(lo), fun((lo + up) / 2.0), fun(up)]
+}
+
+/// caution: if lo > up, the function will produce an empty Vec
+/// who will set lower limitation greater than upper limitation? he deserves it
+pub fn sum_auto_filler(fun: fn(i32) -> f64, lo: i32, up: i32) -> Vec<f64> {
+    let mut v = Vec::new();
+    for i in lo..=up {
+        v.push(fun(i));
+    }
+
+    v
 }
 
 #[cfg(test)]
