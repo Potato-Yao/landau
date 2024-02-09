@@ -44,6 +44,8 @@ pub enum Token {
     Subscript(String),
     Dot,
     Eos,
+    NestFunction(String, Vec<Proto>, Vec<Proto>),
+    NestExpression(Vec<Proto>),
 }
 
 pub type Proto = Vec<Token>;
@@ -95,20 +97,56 @@ impl Lex {
             if po.is_none() {
                 break;
             }
-            if let Token::Function(fun, _, _) = po.clone().unwrap() {
-                if HUGE_SYMBOL.contains(&fun) {
-                    let (sub, sup) = match (proto.next(), proto.next()) {
-                        (Some(Token::Subscript(sub)), Some(Token::Superscript(sup))) => (sub.clone(), sup.clone()),
-                        _ => return Err(format!("function {fun} miss args!")),
-                    };
-                    vec.push(Token::Function(fun.clone(), vec![sub, sup], vec![]))
+            match po.unwrap() {
+                Token::Function(fun, _, _) => {
+                    if HUGE_SYMBOL.contains(&fun) {
+                        let (sub, sup) = match (proto.next(), proto.next()) {
+                            (Some(Token::Subscript(sub)), Some(Token::Superscript(sup))) =>
+                                (sub.clone(), sup.clone()),
+                            (Some(Token::Superscript(sup)), Some(Token::Subscript(sub))) =>
+                                (sub.clone(), sup.clone()),
+                            _ => return Err(format!("function {fun} miss args!")),
+                        };
+                        vec.push(Token::Function(fun.clone(), vec![sub, sup], vec![]))
+                    } else {}
                 }
-            } else {
-                vec.push(po.unwrap());
+                t => {
+                    vec.push(t);
+                }
             }
         }
 
         Ok(vec)
+    }
+
+    fn string_parse(string: &String) -> Option<Token> {
+        let mut lex = Lex::new(string.clone());
+        let mut pro = Vec::<Token>::new();
+
+        for i in lex.parse().into_iter() {
+            match i {
+                Token::Function(_, op, re) => {
+                    let mut temp_op = Vec::<Token>::new();
+                    let mut temp_re = Vec::<Token>::new();
+                    let func = |string: &Vec<String>, mut target: &mut Vec<Token>| {
+                        for j in string.iter() {
+                            let p = Lex::string_parse(j);
+                            if p.is_some() {
+                                target.push(p.unwrap());
+                            }
+                        }
+                    };
+                    func(&op, &mut temp_op);
+                    func(&re, &mut temp_re);
+                }
+                Token::Expression(e) => {
+
+                }
+                _ => ()
+            }
+        }
+
+        None
     }
 
     fn next(&mut self) -> Token {
