@@ -44,8 +44,8 @@ pub enum Token {
     Subscript(String),
     Dot,
     Eos,
-    NestFunction(String, Vec<Proto>, Vec<Proto>),
-    NestExpression(Vec<Proto>),
+    NestFunction(String,Proto, Proto),
+    NestExpression(Proto),
 }
 
 pub type Proto = Vec<Token>;
@@ -98,17 +98,15 @@ impl Lex {
                 break;
             }
             match po.unwrap() {
-                Token::Function(fun, _, _) => {
-                    if HUGE_SYMBOL.contains(&fun) {
-                        let (sub, sup) = match (proto.next(), proto.next()) {
-                            (Some(Token::Subscript(sub)), Some(Token::Superscript(sup))) =>
-                                (sub.clone(), sup.clone()),
-                            (Some(Token::Superscript(sup)), Some(Token::Subscript(sub))) =>
-                                (sub.clone(), sup.clone()),
-                            _ => return Err(format!("function {fun} miss args!")),
-                        };
-                        vec.push(Token::Function(fun.clone(), vec![sub, sup], vec![]))
-                    } else {}
+                Token::Function(fun, _, _) if HUGE_SYMBOL.contains(&fun) => {
+                    let (sub, sup) = match (proto.next(), proto.next()) {
+                        (Some(Token::Subscript(sub)), Some(Token::Superscript(sup))) =>
+                            (sub.clone(), sup.clone()),
+                        (Some(Token::Superscript(sup)), Some(Token::Subscript(sub))) =>
+                            (sub.clone(), sup.clone()),
+                        _ => return Err(format!("function {fun} miss args!")),
+                    };
+                    vec.push(Token::Function(fun.clone(), vec![sub, sup], vec![]))
                 }
                 t => {
                     vec.push(t);
@@ -120,31 +118,6 @@ impl Lex {
     }
 
     fn string_parse(string: &String) -> Option<Token> {
-        let mut lex = Lex::new(string.clone());
-        let mut pro = Vec::<Token>::new();
-
-        for i in lex.parse().into_iter() {
-            match i {
-                Token::Function(_, op, re) => {
-                    let mut temp_op = Vec::<Token>::new();
-                    let mut temp_re = Vec::<Token>::new();
-                    let func = |string: &Vec<String>, mut target: &mut Vec<Token>| {
-                        for j in string.iter() {
-                            let p = Lex::string_parse(j);
-                            if p.is_some() {
-                                target.push(p.unwrap());
-                            }
-                        }
-                    };
-                    func(&op, &mut temp_op);
-                    func(&re, &mut temp_re);
-                }
-                Token::Expression(e) => {
-
-                }
-                _ => ()
-            }
-        }
 
         None
     }
@@ -381,6 +354,11 @@ mod tests {
         ));
     }
 
+    // #[test]
+    // fn string_parse_test() {
+    //     let s = "x^2".to_string();
+    // }
+
     #[test]
     fn parse_test1() {
         let test1 = "\\frac{k}{k_0} = \\left(\\frac{T}{T_0}\\right)^{1.5}\\left(\\frac{T_0 + T_s}{T + T_{s}}\\right)
@@ -422,6 +400,18 @@ mod tests {
         let v4 = l4.parse();
 
         for i in v4 {
+            println!("{:?}", i);
+        }
+    }
+
+    /// this test stands for a typical scene which contains some basic functions
+    #[test]
+    fn parse_test5() {
+        let test5 = "\\frac{1}{2} + \\sqrt[3]{4}".to_string();
+        let mut l5 = Lex::new(test5);
+        let v5 = l5.parse();
+
+        for i in v5 {
             println!("{:?}", i);
         }
     }

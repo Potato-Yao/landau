@@ -1,5 +1,5 @@
 use latex_analyzer::lex::{Lex, Proto, Token};
-use crate::function::{Function, get_function, HUGE_SYMBOL};
+use crate::function::{get_function, Known};
 
 pub struct Exec {
     cursor: usize,
@@ -11,8 +11,10 @@ struct ExecPair<'a> {
     pointer: i32,
 }
 
-impl ExecPair {
-    fn new(token: &Token, pointer: i32) -> Self {
+impl ExecPair<'_> {
+    fn new<'a, 'b>(token: &'b Token, pointer: i32) -> ExecPair<'a>
+        where 'b: 'a
+    {
         ExecPair { token, pointer }
     }
 }
@@ -26,15 +28,21 @@ impl Exec {
         Exec::new(lex.parse())
     }
 
-    pub fn load(&mut self) -> (Vec<ExecPair>, Vec<ExecPair>) {
-        let mut fun_stack = Vec::<ExecPair>::new();
-        let mut expr_stack = Vec::<ExecPair>::new();
-
-        (fun_stack, expr_stack)
-    }
-
     pub fn calc(&self) -> Result<f64, String> {
         let mut result = 0.0;
+        let mut value_stack = Vec::new();
+
+        for token in self.proto.into_iter() {
+            match token {
+                Token::Function(fun, op, re) => {
+                    let fun = get_function(&fun)?;
+                    value_stack.push((fun.calc)(op, re));
+                }
+
+                Token::Eos => break,
+                _ => ()
+            }
+        }
 
         Ok(result)
     }
