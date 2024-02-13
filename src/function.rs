@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use math::root::nth_root;
 use crate::buildin_function::{int, sum};
 
-/// An type who impls Known can return a certain value just by itself.
+/// A type who impls Known can return a certain value just by itself.
 pub trait Known {
     fn get_value(&self) -> Option<f64>;
 }
