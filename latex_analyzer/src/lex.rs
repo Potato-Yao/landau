@@ -20,40 +20,42 @@ pub enum Token {
     // Function`s name, optional arguments and required arguments
     // For example, \sqrt[3]{2} will be parsed as 'Function("sqrt", ["3"], ["2"])'
     Function(String, Vec<String>, Vec<String>),
-    Equal,
     // symbol "="
-    Add,
+    Equal,
     // symbol "+"
-    Div,
+    Add,
     // symbol "/"
-    Sub,
+    Div,
     // symbol "-"
-    Times,
+    Sub,
     // symbol "*"
+    Times,
     // The expression within the parentheses and brackets should be represented as ParL(String) as well, in my opinion.
     // However, the nested expression would be too complex to parse, so just leave this task to exec :)
-    ParL,
     // (
-    ParR,
+    ParL,
     // )
-    SquareL,
+    ParR,
     // [
-    SquareR,
+    SquareL,
     // ]
+    SquareR,
     // we need } to divide blocks
     BraceR,
     // The string representing superscripts and subscripts follows the syntax of a carat (^) for superscripts and
     // an underscore (_) for subscripts.
     // For superscripts, "^2" should be translated to Superscript("2"), and "^{2}" should be handled in the same manner too.
     // For subscripts, "_{22}" is converted to Subscript("22").
-    Superscript(String),
     // ^
-    Subscript(String),
+    Superscript(String),
     // _
-    Dot,
+    Subscript(String),
     // .
-    Eos,
+    Dot,
+    // ,
+    Comma,
     // \n or \0
+    Eos,
     NestFunction(String, Proto, Proto),
     NestExpression(Proto),
 }
@@ -103,8 +105,10 @@ impl Lex {
     }
 
     /// Some optimizations on parsed proto.
+    /// As expected, there should be just 'Expression', 'Function' 'Add', 'Div', 'Sub', 'Times',
+    /// 'ParL' and 'ParR' in the proto
     fn post_process(proto: Proto) -> Result<Proto, String> {
-        let mut proto = proto.into_iter();
+        let mut proto = proto.clone().into_iter();
         let mut vec = Vec::<Token>::new();
 
         loop {
@@ -136,10 +140,6 @@ impl Lex {
         Ok(vec)
     }
 
-    fn string_parse(string: &String) -> Option<Token> {
-        None
-    }
-
     // Read next token
     fn next(&mut self) -> Token {
         let ch = self.read_char();
@@ -158,13 +158,18 @@ impl Lex {
             ')' => Token::ParR,
             '[' => Token::SquareL,
             ']' => Token::SquareR,
-            ',' => Token::Dot,
+            ',' => Token::Comma,
+            '.' => Token::Dot,
 
             '_' => Token::Subscript(self.read_subscript()),
             '^' => Token::Superscript(self.read_subscript()),
             'a'..='z' | 'A'..='Z' => {
                 self.put_back();  // to read a full string
                 Token::Expression(self.read_pure_string())
+            }
+            '0'..='9' => {
+                self.put_back();
+                Token::Expression(self.read_pure_number())
             }
             '{' => Token::Expression(self.read_until_brace_r()),
             '}' => Token::BraceR,
@@ -236,6 +241,11 @@ impl Lex {
         }
 
         s
+    }
+
+    /// Pure numbers, such as 1, 1.5
+    fn read_pure_number(&mut self) -> String {
+        self.read_string(|c| c.is_numeric() || c == '.')
     }
 
     /// If the input string begins with a '{', this function will read until it finds the

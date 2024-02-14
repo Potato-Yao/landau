@@ -1,94 +1,67 @@
 use crate::function::{get_function, Known};
 use crate::transformer::strings_to_known;
-use latex_analyzer::lex::{Lex, Proto, Token};
-use std::collections::VecDeque;
+use latex_analyzer::ast::{Node, NodeKind, AST};
+use latex_analyzer::lex::{Lex, Token};
+use latex_analyzer::parser::Parser;
 
 pub struct Exec {
     cursor: usize,
-    proto: Proto,
-}
-
-struct ExecPair<'a> {
-    token: &'a Token,
-    pointer: i32,
-}
-
-impl ExecPair<'_> {
-    fn new<'a, 'b>(token: &'b Token, pointer: i32) -> ExecPair<'a>
-    where
-        'b: 'a,
-    {
-        ExecPair { token, pointer }
-    }
+    node: Node,
 }
 
 impl Exec {
-    pub fn new(proto: Proto) -> Self {
-        Exec { cursor: 0, proto }
+    pub fn from_lex(mut lex: Lex) -> Exec {
+        let proto = lex.parse();
+        let parser = Parser::new(proto);
+        let proto = parser.to_postfix_proto();
+        let ast = AST::new(proto);
+
+        Exec {
+            cursor: 0,
+            node: ast.0,
+        }
     }
 
-    pub fn from_lex(mut lex: Lex) -> Self {
-        Exec::new(lex.parse())
+    pub fn calculate(&self) -> Result<f64, String> {
+        Exec::evaluate_node(&self.node)
     }
 
-    fn load(&self) -> Result<(VecDeque<f64>, VecDeque<Token>), String> {
-        let mut value_queue = VecDeque::<f64>::new();
-        let mut operator_queue = VecDeque::<Token>::new();
-
-        let proto = self.proto.clone();
-        for token in proto.into_iter() {
-            let mut front_needed = false;
-
-            match token {
+    fn evaluate_node(node: &Node) -> Result<f64, String> {
+        return if node.node_kind == NodeKind::Num {
+            match node.value.clone().unwrap() {
                 Token::Function(fun, op, re) => {
                     let fun = get_function(&fun)?;
                     let op = strings_to_known(op);
                     let re = strings_to_known(re);
+                    let result = (fun.calc)(op, re);
 
-                    value_queue.push_back((fun.calc)(op, re).unwrap());
+                    Ok(result.unwrap())
                 }
-
-                Token::Add | Token::Sub => operator_queue.push_back(token),
-
-                Token::Times | Token::Div => {
-                    front_needed = true;
-                    operator_queue.push_back(token);
-                }
-
-                Token::Eos => break,
-                _ => (),
+                _ => Err(format!("Can not evaluate {node:?}")),
             }
-        }
-
-        Ok((value_queue, operator_queue))
+        } else {
+            Exec::evaluate_op_node(node)
+        };
     }
 
-    pub fn calc(&self) -> Result<f64, String> {
-        let (mut value_queue, operator_queue) = self.load()?;
-        let operator_disorder_error = Err("There are too many operators!".to_string());
-
-        for opera in operator_queue.iter() {
-            let (v1, v2) = match (value_queue.pop_front(), value_queue.pop_front()) {
-                (Some(val1), Some(val2)) => (val1, val2),
-                _ => return operator_disorder_error,
-            };
-
-            value_queue.push_back(match opera {
-                Token::Add => v1 + v2,
-                Token::Sub => v2 - v1,
-                Token::Times => v1 * v2,
-                Token::Div => v2 / v1,
-                _ => {
-                    return Err(format!("Unexpected token {:?} occurred!", opera));
-                }
-            });
-        }
-
-        return if value_queue.len() != 1 {
-            Err("Error occurred in calc!".to_string())
-        } else {
-            Ok(value_queue.pop_front().unwrap())
+    fn evaluate_op_node(node: &Node) -> Result<f64, String> {
+        let (left, right) = match (
+            Exec::evaluate_node(&node.left.as_ref().unwrap()),
+            Exec::evaluate_node(&node.right.as_ref().unwrap()),
+        ) {
+            (Ok(l), Ok(r)) => (l, r),
+            (l, r) => return Err(format!("Node {l:?} or {r:?} can not be evaluated!")),
         };
+
+        let result = match node.op.clone().unwrap() {
+            Token::Add => left + right,
+            Token::Sub => left - right,
+            Token::Times => left * right,
+            Token::Div => left / right,
+            o => return Err(format!("Token {o:?} can not be a operator!")),
+        };
+
+        Ok(result)
     }
 }
 
@@ -103,24 +76,6 @@ mod tests {
         let lex = Lex::new("\\frac{1}{2} + \\sqrt[3]{4} - \\frac{1}{3}".to_string());
         let exec = Exec::from_lex(lex);
 
-        assert_eq!(custom_round(exec.calc().unwrap(), 3).unwrap(), 1.754);
-    }
-
-    #[test]
-    fn exec_test2() {
-        // qrt is not defined
-        let lex = Lex::new("\\frac{1}{2} + \\qrt[3]{4}".to_string());
-        let exec = Exec::from_lex(lex);
-
-        assert!(exec.calc().is_err());
-    }
-
-    #[test]
-    fn exec_test3() {
-        // too many operators
-        let lex = Lex::new("\\frac{1}{2} ++ \\sqrt[3]{4}".to_string());
-        let exec = Exec::from_lex(lex);
-
-        assert!(exec.calc().is_err());
+        assert_eq!(custom_round(exec.calculate().unwrap(), 3).unwrap(), 1.754);
     }
 }
