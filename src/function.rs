@@ -67,12 +67,7 @@ lazy_static! {
 
 lazy_static! {
     pub static ref HUGE_SYMBOL: Vec<String> = {
-        let mut v = Vec::new();
-        v.push("int".to_string());
-        v.push("sum".to_string());
-        v.push("prod".to_string());
-
-        v
+        vec!["int".to_string(), "sum".to_string(), "prod".to_string()]
     };
 }
 

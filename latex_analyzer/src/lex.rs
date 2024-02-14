@@ -6,6 +6,7 @@ use std::io::{Read};
 use std::string::ToString;
 use lazy_static::lazy_static;
 
+// we call \int, \sum and \prod as huge symbol
 lazy_static! {
     static ref HUGE_SYMBOL: Vec<String> = {
         vec!["int".to_string(), "sum".to_string(), "prod".to_string()]
@@ -14,37 +15,46 @@ lazy_static! {
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Token {
-    // such as "ax^2 + bx + c"
+    // Expression only contains letters, numbers and decimal
     Expression(String),
-    // Function`s name, args in [], args in {}
+    // Function`s name, optional arguments and required arguments
+    // For example, \sqrt[3]{2} will be parsed as 'Function("sqrt", ["3"], ["2"])'
     Function(String, Vec<String>, Vec<String>),
     Equal,
+    // symbol "="
     Add,
+    // symbol "+"
     Div,
+    // symbol "/"
     Sub,
+    // symbol "-"
     Times,
-    // in fact, I think () [] should be represented as ParL(String)
-    // but the nested expression would be too complex to parse
-    // so just leave this work to exec :)
-    // (
+    // symbol "*"
+    // The expression within the parentheses and brackets should be represented as ParL(String) as well, in my opinion.
+    // However, the nested expression would be too complex to parse, so just leave this task to exec :)
     ParL,
-    // )
+    // (
     ParR,
-    // [
+    // )
     SquareL,
-    // ]
+    // [
     SquareR,
-    // }
+    // ]
     // we need } to divide blocks
     BraceR,
-    // the string of Superscript and Subscript is the expression of a ^ or _
-    // for example, ^2 will be turned to Superscript("2"), ^{2} will be turned to it as well
-    // _{22} will be turned to Subscript("22")
+    // The string representing superscripts and subscripts follows the syntax of a carat (^) for superscripts and
+    // an underscore (_) for subscripts.
+    // For superscripts, "^2" should be translated to Superscript("2"), and "^{2}" should be handled in the same manner too.
+    // For subscripts, "_{22}" is converted to Subscript("22").
     Superscript(String),
+    // ^
     Subscript(String),
+    // _
     Dot,
+    // .
     Eos,
-    NestFunction(String,Proto, Proto),
+    // \n or \0
+    NestFunction(String, Proto, Proto),
     NestExpression(Proto),
 }
 
@@ -79,6 +89,10 @@ impl Lex {
                     break;
                 }
                 t => match t {
+                    // In LaTeX expression, we often use empty braces {} to distinct blocks enhancing readability.
+                    // For example, we opt for a^2{}b over a^2b to represent the multiplication of a^2 and b.
+                    // The empty braces {} will be parsed as 'Expression("")', which is meaningless for exec,
+                    // so we will filter it out
                     Token::Expression(e) if e.is_empty() => (),
                     t => vec.push(t),
                 }
@@ -88,6 +102,7 @@ impl Lex {
         Lex::post_process(vec).unwrap()
     }
 
+    /// Some optimizations on parsed proto.
     fn post_process(proto: Proto) -> Result<Proto, String> {
         let mut proto = proto.into_iter();
         let mut vec = Vec::<Token>::new();
@@ -98,10 +113,14 @@ impl Lex {
                 break;
             }
             match po.unwrap() {
+                // Convert subscripts and superscripts of huge symbols into optional arguments.
+                // Caution: For huge symbols, optional_arguments[0] stands for subscript and [1] for superscript
                 Token::Function(fun, _, _) if HUGE_SYMBOL.contains(&fun) => {
                     let (sub, sup) = match (proto.next(), proto.next()) {
+                        // fun_a^b -> Function("fun", ["a", "b"], [])
                         (Some(Token::Subscript(sub)), Some(Token::Superscript(sup))) =>
                             (sub.clone(), sup.clone()),
+                        // fun^a_b -> Function("fun", ["b", "a"], [])
                         (Some(Token::Superscript(sup)), Some(Token::Subscript(sub))) =>
                             (sub.clone(), sup.clone()),
                         _ => return Err(format!("function {fun} miss args!")),
@@ -118,10 +137,10 @@ impl Lex {
     }
 
     fn string_parse(string: &String) -> Option<Token> {
-
         None
     }
 
+    // Read next token
     fn next(&mut self) -> Token {
         let ch = self.read_char();
 
@@ -141,12 +160,10 @@ impl Lex {
             ']' => Token::SquareR,
             ',' => Token::Dot,
 
-            // '^' => Token::Superscript(self.read_pure_string(None)),
-            // '_' => Token::Subscript(self.read_pure_string(None)),
             '_' => Token::Subscript(self.read_subscript()),
             '^' => Token::Superscript(self.read_subscript()),
             'a'..='z' | 'A'..='Z' => {
-                self.put_back();
+                self.put_back();  // to read a full string
                 Token::Expression(self.read_pure_string())
             }
             '{' => Token::Expression(self.read_until_brace_r()),
@@ -201,6 +218,7 @@ impl Lex {
         Token::Function(name, optional_args, required_args)
     }
 
+    /// Read string with a specific condition
     fn read_string<F>(&mut self, mut con: F) -> String
         where
             F: FnMut(char) -> bool,
@@ -251,7 +269,7 @@ impl Lex {
 
         return if s.len() == 0 {
             "".to_string()
-        } else if s.chars().next().unwrap() == '{'
+        } else if s.chars().next().unwrap() == '{'  // Match paired braces
             && s.chars().last().unwrap() == '}' {
             s.drain(..1);  // remove the first char, which is a '{'
             s.pop();  // remove the last char, which is a '}'
@@ -266,6 +284,7 @@ impl Lex {
         self.read_string(|ch| ch.is_alphanumeric() || ch == '.')
     }
 
+    /// The content of '_{abc}' is 'abc', the content of '_abc' is 'a'
     fn read_subscript(&mut self) -> String {
         match self.read_char() {
             '{' => {
@@ -280,6 +299,7 @@ impl Lex {
         self.cursor -= 1;
     }
 
+    /// TODO Discuss if bounds checking is needed
     fn read_char(&mut self) -> char {
         self.cursor += 1;
         self.input[self.cursor - 1]
@@ -353,11 +373,6 @@ mod tests {
             vec![],
         ));
     }
-
-    // #[test]
-    // fn string_parse_test() {
-    //     let s = "x^2".to_string();
-    // }
 
     #[test]
     fn parse_test1() {
