@@ -43,7 +43,7 @@ impl Node {
 
     fn new_op_node(op: Token, left: Node, right: Node) -> Result<Node, String> {
         match op {
-            Token::Add | Token::Sub | Token::Div | Token::Times => {
+            Token::Add | Token::Sub | Token::Div | Token::Times | Token::Superscript(_) => {
                 let node = Node {
                     node_kind: NodeKind::Op,
                     value: None,
@@ -65,6 +65,12 @@ impl Node {
             match e {
                 Token::Expression(_) | Token::Function(_, _, _) => {
                     stack.push(Node::new_value_node(e).unwrap());
+                }
+                Token::Superscript(ref expr) => {
+                    let op2 = Node::new_value_node(Token::Expression(expr.clone())).unwrap();
+                    let op1 = stack.pop().unwrap();
+
+                    stack.push(Node::new_op_node(e, op1, op2).unwrap())
                 }
                 Token::Eos => break,
                 _ => {

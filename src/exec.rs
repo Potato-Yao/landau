@@ -1,11 +1,11 @@
-use crate::function::{get_function, Known};
-use crate::transformer::strings_to_known;
+use crate::function::get_function;
+use crate::transformer::{string_to_known, strings_to_known};
 use latex_analyzer::ast::{Node, NodeKind, AST};
 use latex_analyzer::lex::{Lex, Token};
 use latex_analyzer::parser::Parser;
+use num::pow;
 
 pub struct Exec {
-    cursor: usize,
     node: Node,
 }
 
@@ -16,10 +16,7 @@ impl Exec {
         let proto = parser.to_postfix_proto();
         let ast = AST::new(proto);
 
-        Exec {
-            cursor: 0,
-            node: ast.0,
-        }
+        Exec { node: ast.0 }
     }
 
     pub fn calculate(&self) -> Result<f64, String> {
@@ -37,6 +34,7 @@ impl Exec {
 
                     Ok(result.unwrap())
                 }
+                Token::Expression(ref expr) => Ok(string_to_known(expr).get_value().unwrap()),
                 _ => Err(format!("Can not evaluate {node:?}")),
             }
         } else {
@@ -58,6 +56,7 @@ impl Exec {
             Token::Sub => left - right,
             Token::Times => left * right,
             Token::Div => left / right,
+            Token::Superscript(_) => pow(left, right as usize),
             o => return Err(format!("Token {o:?} can not be a operator!")),
         };
 
@@ -77,5 +76,13 @@ mod tests {
         let exec = Exec::from_lex(lex);
 
         assert_eq!(custom_round(exec.calculate().unwrap(), 3).unwrap(), 1.754);
+    }
+
+    #[test]
+    fn exec_text2() {
+        let lex = Lex::new("2^2".to_string());
+        let exec = Exec::from_lex(lex);
+
+        assert_eq!(exec.calculate().unwrap(), 4.0);
     }
 }

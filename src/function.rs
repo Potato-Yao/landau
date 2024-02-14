@@ -44,7 +44,7 @@ static mut EXTERN_FUNCTION: Vec<Function> = Vec::new();
 lazy_static! {
     static ref BUILD_IN_FUNCTION: Vec<Function> = {
         let mut table = Vec::new();
-        table.push(Function::new("frac", |o, r| {
+        table.push(Function::new("frac", |_o, r| {
             crate::buildin_function::div(r[0].get_value().unwrap(), r[1].get_value().unwrap())
         }, 2));
         table.push(Function::new("sqrt", |o, r| {
@@ -55,7 +55,7 @@ lazy_static! {
                 .map(|x| x.get_value().unwrap()).collect();
             int(o[0].get_value().unwrap(), o[1].get_value().unwrap(), r)
         }, 1));
-        table.push(Function::new("sum", |o, r| {
+        table.push(Function::new("sum", |_o, r| {
             let r = r.iter()
                 .map(|x| x.get_value().unwrap()).collect();
             sum(r)
@@ -102,13 +102,13 @@ pub fn get_function<'a>(name: &String) -> Result<&'a Function, String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::function::{Known, Function, get_function, register_extern_function};
+    use crate::function::{Function, get_function, register_extern_function};
 
     #[test]
     fn function_test() {
         let frac = Function {
             name: "frac".to_string(),
-            calc: |o, r| {
+            calc: |_o, r| {
                 Some(r[0].get_value().unwrap() / r[1].get_value().unwrap())
             },
             required_args_count: 2,
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn register_function_test() {
-        let re = Function::new("double", |o, r| {
+        let re = Function::new("double", |_o, r| {
             Some(r[0].get_value().unwrap() * 2.0)
         }, 1);
 

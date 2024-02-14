@@ -56,8 +56,6 @@ pub enum Token {
     Comma,
     // \n or \0
     Eos,
-    NestFunction(String, Proto, Proto),
-    NestExpression(Proto),
 }
 
 pub type Proto = Vec<Token>;

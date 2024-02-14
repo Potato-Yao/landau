@@ -27,7 +27,7 @@ impl Parser {
                     }
                     stack.pop();
                 }
-                Token::Add | Token::Sub | Token::Times | Token::Div => {
+                Token::Add | Token::Sub | Token::Times | Token::Div | Token::Superscript(_) => {
                     while !stack.is_empty()
                         && Parser::weight(&stack.last().unwrap()) >= Parser::weight(&p)
                     {
