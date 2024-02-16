@@ -4,6 +4,7 @@ use latex_analyzer::ast::{Node, NodeKind, AST};
 use latex_analyzer::lex::{Lex, Token};
 use latex_analyzer::parser::Parser;
 use num::pow;
+use crate::config;
 
 pub struct Exec {
     node: Node,
@@ -56,7 +57,13 @@ impl Exec {
             Token::Sub => left - right,
             Token::Times => left * right,
             Token::Div => left / right,
-            Token::Superscript(_) => pow(left, right as usize),
+            Token::Superscript(_) => {
+                if config::CONFIG.high_accuracy {
+                    math::pow::high_accuracy_pow(left, right)
+                } else {
+                    pow(left, right as usize)
+                }
+            }
             o => return Err(format!("Token {o:?} can not be a operator!")),
         };
 
@@ -79,10 +86,18 @@ mod tests {
     }
 
     #[test]
-    fn exec_text2() {
+    fn exec_test2() {
         let lex = Lex::new("2^2".to_string());
         let exec = Exec::from_lex(lex);
 
         assert_eq!(exec.calculate().unwrap(), 4.0);
+    }
+
+    #[test]
+    fn exec_test3() {
+        let lex = Lex::new("\\int_1^2x\\di{x}".to_string());
+        let exec = Exec::from_lex(lex);
+
+        assert_eq!(exec.calculate().unwrap(), 1.5);
     }
 }

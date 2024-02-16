@@ -5,11 +5,17 @@ use std::fs::File;
 use std::io::{Read};
 use std::string::ToString;
 use lazy_static::lazy_static;
+use crate::lex::Token::Expression;
 
-// we call \int, \sum and \prod as huge symbol
 lazy_static! {
+    // we call \int, \sum and \prod as huge symbol
     static ref HUGE_SYMBOL: Vec<String> = {
         vec!["int".to_string(), "sum".to_string(), "prod".to_string()]
+    };
+
+    // some symbols are used for decoration, such as \left and \right
+    static ref IGNORE_SYMBOL: Vec<String> = {
+        vec!["left".to_string(), "right".to_string()]
     };
 }
 
@@ -182,7 +188,7 @@ impl Lex {
     /// For example, "\\frac{\\mu{}c_p}{k}" will be parsed as Function("frac", [], \["\\mu{}c_p", "k"]),
     /// However, "\\frac{\\mu{}c_p}{k}{s}" will be parsed as Function("frac", [], \["\\mu{}c_p", "k", "s"]).
     ///
-    /// Treason for not addressing this issue is that the function "get_function"
+    /// The reason for not addressing this issue is that the function "get_function"
     /// resides in another crate and I don`t want to break the modularity and independence
     /// of this crate.
     /// Moreover, it is not our duty to validate if the LaTeX input has anything wrong.
@@ -193,6 +199,10 @@ impl Lex {
         let mut required_args = Vec::<String>::new();
 
         name = self.read_pure_string();
+        if IGNORE_SYMBOL.contains(&name) {
+            // an 'Expression' with empty content will be ignored by [parse()]
+            return Expression("".to_string());
+        }
 
         loop {
             match self.read_char() {
@@ -418,7 +428,7 @@ mod tests {
 
     #[test]
     fn parse_test4() {
-        let test4 = "\\int_a^b{x}\\d{}x".to_string();
+        let test4 = "\\int_a^b{x}\\di{x}".to_string();
         let mut l4 = Lex::new(test4);
         let v4 = l4.parse();
 
