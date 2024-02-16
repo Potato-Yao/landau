@@ -22,3 +22,4 @@ num = "0.4.1"
 regex = "1.10.3"
 serde = { version = "1.0.196", features = ["derive"] }
 toml = "0.8.10"
+clap = "4.5.1"

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::lex::{Proto, Token};
 
 #[derive(PartialEq, Debug)]
@@ -15,11 +16,12 @@ pub struct Node {
     pub right: Option<Box<Node>>,
 }
 
-pub struct AST(pub Node);
+pub struct AST(pub Node, pub Vec<String>);
 
 impl AST {
     pub fn new(proto: Proto) -> Self {
-        AST(Node::parse_rpn(proto))
+        let (node, var) = Node::parse_rpn(proto);
+        AST(node, var)
     }
 }
 
@@ -58,8 +60,9 @@ impl Node {
         }
     }
 
-    fn parse_rpn(expr: Proto) -> Node {
+    fn parse_rpn(expr: Proto) -> (Node, Vec<String>) {
         let mut stack = Vec::<Node>::new();
+        let mut var = Vec::new();
 
         for e in expr.into_iter() {
             match e {
@@ -72,6 +75,7 @@ impl Node {
 
                     stack.push(Node::new_op_node(e, op1, op2).unwrap())
                 }
+                Token::Var(s) => var.push(s.clone()),
                 Token::Eos => break,
                 _ => {
                     let op2 = stack.pop().unwrap();
@@ -82,6 +86,6 @@ impl Node {
             }
         }
 
-        stack.pop().unwrap()
+        (stack.pop().unwrap(), var)
     }
 }

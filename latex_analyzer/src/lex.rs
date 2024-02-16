@@ -1,11 +1,11 @@
 //! [crate::lex] used to converts LaTeX expressions into Vec<Token> (also called Proto)
 //!
 //! TODO: fix the terrible ownership in this file
+use std::env::var;
 use std::fs::File;
 use std::io::{Read};
 use std::string::ToString;
 use lazy_static::lazy_static;
-use crate::lex::Token::Expression;
 
 lazy_static! {
     // we call \int, \sum and \prod as huge symbol
@@ -60,6 +60,8 @@ pub enum Token {
     Dot,
     // ,
     Comma,
+    // See [Landau LaTeX standard] for explanation
+    Var(String),
     // \n or \0
     Eos,
 }
@@ -114,13 +116,15 @@ impl Lex {
     fn post_process(proto: Proto) -> Result<Proto, String> {
         let mut proto = proto.clone().into_iter();
         let mut vec = Vec::<Token>::new();
+        let mut var_stack = Vec::<Token>::new();
 
         loop {
             let po = proto.next();
             if po.is_none() {
                 break;
             }
-            match po.unwrap() {
+            let po = po.unwrap();
+            match po {
                 // Convert subscripts and superscripts of huge symbols into optional arguments.
                 // Caution: For huge symbols, optional_arguments[0] stands for subscript and [1] for superscript
                 Token::Function(fun, _, _) if HUGE_SYMBOL.contains(&fun) => {
@@ -135,11 +139,13 @@ impl Lex {
                     };
                     vec.push(Token::Function(fun.clone(), vec![sub, sup], vec![]))
                 }
+                Token::Var(_) => var_stack.push(po),
                 t => {
                     vec.push(t);
                 }
             }
         }
+        vec.extend(var_stack.into_iter());
 
         Ok(vec)
     }
@@ -152,7 +158,6 @@ impl Lex {
             ' ' => self.next(),
             '\0' | '\n' => Token::Eos,
 
-            '\\' => self.read_function(),
             '=' => Token::Equal,
             '+' => Token::Add,
             '-' => Token::Sub,
@@ -177,6 +182,18 @@ impl Lex {
             }
             '{' => Token::Expression(self.read_until_brace_r()),
             '}' => Token::BraceR,
+            '\\' => {
+                if let Token::Function(fun, op, re)
+                    = self.read_function() {
+                    return if fun == "var" {
+                        Token::Var(re.get(0).unwrap().clone())
+                    } else {
+                        Token::Function(fun, op, re)
+                    }
+                } else {
+                    panic!("I can`t read function!");
+                }
+            }
 
             _ => panic!("I can`t read char: {ch}"),
         }
@@ -201,7 +218,7 @@ impl Lex {
         name = self.read_pure_string();
         if IGNORE_SYMBOL.contains(&name) {
             // an 'Expression' with empty content will be ignored by [parse()]
-            return Expression("".to_string());
+            return Token::Expression("".to_string());
         }
 
         loop {

@@ -13,6 +13,7 @@ impl Parser {
     pub fn to_postfix_proto(&self) -> Proto {
         let mut postfix = Vec::<Token>::new();
         let mut stack = Vec::new();
+        let mut var_stack = Vec::new();
         let proto = self.proto.clone();
 
         for p in proto.into_iter() {
@@ -35,6 +36,7 @@ impl Parser {
                     }
                     stack.push(p);
                 }
+                Token::Var(_) => var_stack.push(p),
                 Token::Eos => break,
                 _ => panic!("Token {p:?} should not occurred here!"),
             }
@@ -42,6 +44,7 @@ impl Parser {
         while !stack.is_empty() {
             postfix.push(stack.pop().unwrap());
         }
+        postfix.extend(var_stack.into_iter());
         postfix.push(Token::Eos);
 
         postfix
