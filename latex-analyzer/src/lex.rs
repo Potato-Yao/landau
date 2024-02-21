@@ -1,7 +1,5 @@
 //! [crate::lex] used to converts LaTeX expressions into Vec<Token> (also called Proto)
 //!
-//! TODO: fix the terrible ownership in this file
-use std::env::var;
 use std::fs::File;
 use std::io::{Read};
 use std::string::ToString;
@@ -81,7 +79,7 @@ impl Lex {
         Lex { cursor: 0, input: v }
     }
 
-    pub fn from(mut input: File) -> Self {
+    pub fn from_file(mut input: File) -> Self {
         let mut s = String::new();
         input.read_to_string(&mut s).unwrap();
 
@@ -107,16 +105,16 @@ impl Lex {
             }
         }
 
-        Lex::post_process(vec).unwrap()
+        Lex::post_process(vec).unwrap_or_else(|e| panic!("{e}"))
     }
 
     /// Some optimizations on parsed proto.
     /// As expected, there should be just 'Expression', 'Function' 'Add', 'Div', 'Sub', 'Times',
     /// 'ParL' and 'ParR' in the proto
     fn post_process(proto: Proto) -> Result<Proto, String> {
-        let mut proto = proto.clone().into_iter();
-        let mut vec = Vec::<Token>::new();
-        let mut var_stack = Vec::<Token>::new();
+        let mut proto = proto.into_iter();
+        let mut vec = Vec::new();
+        let mut var_stack = Vec::new();
 
         loop {
             let po = proto.next();
@@ -131,13 +129,13 @@ impl Lex {
                     let (sub, sup) = match (proto.next(), proto.next()) {
                         // fun_a^b -> Function("fun", ["a", "b"], [])
                         (Some(Token::Subscript(sub)), Some(Token::Superscript(sup))) =>
-                            (sub.clone(), sup.clone()),
+                            (sub, sup),
                         // fun^a_b -> Function("fun", ["b", "a"], [])
                         (Some(Token::Superscript(sup)), Some(Token::Subscript(sub))) =>
-                            (sub.clone(), sup.clone()),
+                            (sub, sup),
                         _ => return Err(format!("function {fun} miss args!")),
                     };
-                    vec.push(Token::Function(fun.clone(), vec![sub, sup], vec![]))
+                    vec.push(Token::Function(fun, vec![sub, sup], vec![]))
                 }
                 Token::Var(_) => var_stack.push(po),
                 t => {
@@ -183,15 +181,16 @@ impl Lex {
             '{' => Token::Expression(self.read_until_brace_r()),
             '}' => Token::BraceR,
             '\\' => {
-                if let Token::Function(fun, op, re)
-                    = self.read_function() {
-                    return if fun == "var" {
-                        Token::Var(re.get(0).unwrap().clone())
-                    } else {
-                        Token::Function(fun, op, re)
+                let t = self.read_function();
+                match t {
+                    Token::Function(fun, op, mut re) => {
+                        if fun == "var" {
+                            Token::Var(re.remove(0))
+                        } else {
+                            Token::Function(fun, op, re)
+                        }
                     }
-                } else {
-                    panic!("I can`t read function!");
+                    _ => t  // maybe Expression
                 }
             }
 
@@ -212,13 +211,13 @@ impl Lex {
     /// If incorrect LaTeX is provided, we can throw an error in exec :)
     fn read_function(&mut self) -> Token {
         let name: String;
-        let mut optional_args = Vec::<String>::new();
-        let mut required_args = Vec::<String>::new();
+        let mut optional_args = Vec::new();
+        let mut required_args = Vec::new();
 
         name = self.read_pure_string();
         if IGNORE_SYMBOL.contains(&name) {
             // an 'Expression' with empty content will be ignored by [parse()]
-            return Token::Expression("".to_string());
+            return Token::Expression(String::new());
         }
 
         loop {
@@ -302,16 +301,11 @@ impl Lex {
             }
         });
 
-        return if s.len() == 0 {
-            "".to_string()
-        } else if s.chars().next().unwrap() == '{'  // Match paired braces
-            && s.chars().last().unwrap() == '}' {
-            s.drain(..1);  // remove the first char, which is a '{'
+        if s.len() > 1 && s.starts_with('{') && s.ends_with('}') {
+            s.remove(0);  // remove the first char, which is a '{'
             s.pop();  // remove the last char, which is a '}'
-            s
-        } else {
-            s
-        };
+        }
+        return s;
     }
 
     /// Contains letters, numbers and decimal
@@ -334,7 +328,6 @@ impl Lex {
         self.cursor -= 1;
     }
 
-    /// TODO Discuss if bounds checking is needed
     fn read_char(&mut self) -> char {
         self.cursor += 1;
         self.input[self.cursor - 1]
@@ -349,7 +342,7 @@ mod tests {
     #[test]
     fn read_char_test() {
         let f = File::open("test/test1.tex").unwrap();
-        let mut l = Lex::from(f);
+        let mut l = Lex::from_file(f);
         let mut res = String::new();
         loop {
             match l.read_char() {
@@ -380,7 +373,7 @@ mod tests {
     #[test]
     fn read_function_test() {
         let f = File::open("test/test2.tex").unwrap();
-        let mut l = Lex::from(f);
+        let mut l = Lex::from_file(f);
         l.read_char();
 
         assert_eq!(l.read_function(), Token::Function(
@@ -462,6 +455,17 @@ mod tests {
         let v5 = l5.parse();
 
         for i in v5 {
+            println!("{:?}", i);
+        }
+    }
+
+    #[test]
+    fn parse_test6() {
+        let test6 = "\\left(a + \\frac{b}{c}\\right) + d".to_string();
+        let mut l6 = Lex::new(test6);
+        let v6 = l6.parse();
+
+        for i in v6 {
             println!("{:?}", i);
         }
     }

@@ -1,22 +1,26 @@
-use crate::lex::{Proto, Token};
+use crate::lex::{Lex, Proto, Token};
 
 pub struct Parser {
     proto: Proto,
 }
 
 impl Parser {
-    pub fn new(proto: Proto) -> Self {
+    pub fn from_lex(lex: &mut Lex) -> Self {
+        Parser { proto: lex.parse() }
+    }
+
+    pub fn from_proto(proto: Proto) -> Self {
         Parser { proto }
     }
 
+    /// Caution: this function will take the ownership
     /// Make infix proto to postfix proto
-    pub fn to_postfix_proto(&self) -> Proto {
-        let mut postfix = Vec::<Token>::new();
+    pub fn to_postfix_proto(self) -> Proto {
+        let mut postfix = Vec::new();
         let mut stack = Vec::new();
         let mut var_stack = Vec::new();
-        let proto = self.proto.clone();
 
-        for p in proto.into_iter() {
+        for p in self.proto.into_iter() {
             match p {
                 Token::Expression(_) | Token::Function(_, _, _) => {
                     postfix.push(p);
@@ -41,8 +45,9 @@ impl Parser {
                 _ => panic!("Token {p:?} should not occurred here!"),
             }
         }
-        while !stack.is_empty() {
-            postfix.push(stack.pop().unwrap());
+
+        while let Some(element) = stack.pop() {
+            postfix.push(element);
         }
         postfix.extend(var_stack.into_iter());
         postfix.push(Token::Eos);
@@ -68,7 +73,7 @@ mod tests {
     #[test]
     fn to_postfix_proto_test1() {
         let mut lex = Lex::new("a + b * (c - d) / e".to_string());
-        let parser = Parser::new(lex.parse());
+        let parser = Parser::from_lex(&mut lex);
         let proto = parser.to_postfix_proto();
 
         // abcd-*e/+
@@ -80,7 +85,7 @@ mod tests {
     #[test]
     fn to_postfix_proto_test2() {
         let mut lex = Lex::new("a + (\\frac{1}{2} + 3) * \\sqrt[3]{2}".to_string());
-        let parser = Parser::new(lex.parse());
+        let parser = Parser::from_proto(lex.parse());
         let proto = parser.to_postfix_proto();
 
         for p in proto.iter() {

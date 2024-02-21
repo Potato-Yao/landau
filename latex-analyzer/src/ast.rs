@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::lex::{Proto, Token};
 
 #[derive(PartialEq, Debug)]
@@ -61,7 +60,7 @@ impl Node {
     }
 
     fn parse_rpn(expr: Proto) -> (Node, Vec<String>) {
-        let mut stack = Vec::<Node>::new();
+        let mut stack = Vec::new();
         let mut var = Vec::new();
 
         for e in expr.into_iter() {
@@ -69,13 +68,13 @@ impl Node {
                 Token::Expression(_) | Token::Function(_, _, _) => {
                     stack.push(Node::new_value_node(e).unwrap());
                 }
-                Token::Superscript(ref expr) => {
-                    let op2 = Node::new_value_node(Token::Expression(expr.clone())).unwrap();
+                Token::Superscript(content) => {
+                    let op2 = Node::new_value_node(Token::Expression(content)).unwrap();
                     let op1 = stack.pop().unwrap();
 
                     stack.push(Node::new_op_node(e, op1, op2).unwrap())
                 }
-                Token::Var(s) => var.push(s.clone()),
+                Token::Var(s) => var.push(s),
                 Token::Eos => break,
                 _ => {
                     let op2 = stack.pop().unwrap();

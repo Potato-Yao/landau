@@ -7,7 +7,7 @@ edition = "2021"
 
 [workspace]
 members = [
-    "latex_analyzer",
+    "latex-analyzer",
     "math",
 ]
 
@@ -15,7 +15,7 @@ members = [
 
 [dependencies]
 math = { path = "math" }
-latex_analyzer = { path = "latex_analyzer" }
+latex_analyzer = { path = "latex-analyzer" }
 
 lazy_static = "1.4.0"
 num = "0.4.1"

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::env::var;
 use crate::function::get_function;
 use crate::transformer::{string_to_known, strings_to_known};
 use latex_analyzer::ast::{Node, NodeKind, AST};
@@ -18,7 +17,7 @@ pub struct Exec {
 impl Exec {
     pub fn from_lex(mut lex: Lex) -> Exec {
         let proto = lex.parse();
-        let parser = Parser::new(proto);
+        let parser = Parser::from_proto(proto);
         let proto = parser.to_postfix_proto();
         let ast = AST::new(proto);
 
