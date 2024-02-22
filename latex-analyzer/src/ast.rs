@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use crate::lex::{Proto, Token};
 
 #[derive(PartialEq, Debug)]
@@ -11,8 +12,8 @@ pub struct Node {
     pub node_kind: NodeKind,
     pub value: Option<Token>,
     pub op: Option<Token>,
-    pub left: Option<Box<Node>>,
-    pub right: Option<Box<Node>>,
+    pub left: Option<Rc<Node>>,
+    pub right: Option<Rc<Node>>,
 }
 
 pub struct AST(pub Node, pub Vec<String>);
@@ -49,8 +50,8 @@ impl Node {
                     node_kind: NodeKind::Op,
                     value: None,
                     op: Some(op),
-                    left: Some(Box::from(left)),
-                    right: Some(Box::from(right)),
+                    left: Some(Rc::new(left)),
+                    right: Some(Rc::new(right)),
                 };
 
                 Ok(node)
@@ -72,7 +73,9 @@ impl Node {
                     let op2 = Node::new_value_node(Token::Expression(content)).unwrap();
                     let op1 = stack.pop().unwrap();
 
-                    stack.push(Node::new_op_node(e, op1, op2).unwrap())
+                    // the content of superscript will no longer be used
+                    stack.push(Node::new_op_node(
+                        Token::Superscript(String::new()), op1, op2).unwrap())
                 }
                 Token::Var(s) => var.push(s),
                 Token::Eos => break,

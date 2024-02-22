@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use math::root::nth_root;
-use crate::buildin_function::{int, sum};
+use crate::buildin_function::{div, int, sum};
 
 /// A type who impls Known can return a certain value just by itself.
 pub trait Known {
@@ -45,7 +45,7 @@ lazy_static! {
     static ref BUILD_IN_FUNCTION: Vec<Function> = {
         let mut table = Vec::new();
         table.push(Function::new("frac", |_o, r| {
-            crate::buildin_function::div(r[0].get_value().unwrap(), r[1].get_value().unwrap())
+            div(r[0].get_value().unwrap(), r[1].get_value().unwrap())
         }, 2));
         table.push(Function::new("sqrt", |o, r| {
             nth_root(r[0].get_value().unwrap(), o[0].get_value().unwrap() as i32)
@@ -81,8 +81,7 @@ pub fn register_extern_function(fun: Function) -> Result<(), String> {
 /// build-in functions take the priority,
 /// so if there`s an extern function which has a same name as a build-in function,
 /// the extern function will never be gotten
-pub fn get_function<'a>(name: &String) -> Result<&'a Function, String> {
-    let name = name.clone();
+pub fn get_function<'a>(name: String) -> Result<&'a Function, String> {
     if let Some(fun) =
         BUILD_IN_FUNCTION.iter().find(|f| f.name == name)
     {
@@ -123,7 +122,7 @@ mod tests {
 
     #[test]
     fn get_function_test() {
-        let fun = get_function(&"frac".to_string()).unwrap();
+        let fun = get_function("frac".to_string()).unwrap();
         assert_eq!(fun.name, "frac");
         assert_eq!((fun.calc)(vec![], vec![Box::new(1.0), Box::new(2.0)]).unwrap(), 0.5);
     }
@@ -135,7 +134,7 @@ mod tests {
         }, 1);
 
         register_extern_function(re).expect("Register function failed!");
-        let fun = get_function(&"double".to_string()).unwrap();
+        let fun = get_function("double".to_string()).unwrap();
         assert_eq!((fun.calc)(vec![], vec![Box::new(10.0)]).unwrap(), 20.0);
     }
 }

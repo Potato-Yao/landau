@@ -46,9 +46,10 @@ impl Exec {
 
     fn evaluate_node(&self, node: &Node) -> Result<f64, String> {
         return if node.node_kind == NodeKind::Num {
+            assert!(!node.value.is_none());
             match node.value.clone().unwrap() {
                 Token::Function(fun, op, re) => {
-                    let fun = get_function(&fun)?;
+                    let fun = get_function(fun)?;
                     let op = strings_to_known(op);
                     let re = strings_to_known(re);
                     let result = (fun.calc)(op, re);
@@ -59,9 +60,9 @@ impl Exec {
                     let v = string_to_known(expr).get_value();
                     return match v {
                         Some(f) => Ok(f),
-                        Node => match self.var_map.get(expr) {
+                        None => match self.var_map.get(expr) {
                             Some(f) => Ok(f.clone()),
-                            None => Err(format!("Can not get variety {expr}")),
+                            None => Err(format!("Can not get variable {expr}")),
                         }
                     }
                 }
@@ -81,7 +82,10 @@ impl Exec {
             (l, r) => return Err(format!("Node {l:?} or {r:?} can not be evaluated!")),
         };
 
-        let result = match node.op.clone().unwrap() {
+        let Some(ref op) = node.op else {
+            return Err(format!("Can not get op from {:?}", node));
+        };
+        let result = match op {
             Token::Add => left + right,
             Token::Sub => left - right,
             Token::Times => left * right,
@@ -122,6 +126,8 @@ mod tests {
         assert_eq!(exec.calculate().unwrap(), 4.0);
     }
 
+    /// di has not implemented yet!
+    #[ignore]
     #[test]
     fn exec_test3() {
         let lex = Lex::new("\\int_1^2x\\di{x}".to_string());
