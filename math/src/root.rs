@@ -15,11 +15,11 @@ pub fn nth_root(x: f64, n: i32) -> Option<f64> {
 #[cfg(test)]
 mod tests {
     use crate::root::nth_root;
-    use crate::round::custom_round;
+    use crate::approx::custom_approx;
 
     #[test]
     fn root_test() {
         let a = nth_root(2.0, 2).unwrap();
-        assert_eq!(custom_round(a, 3).unwrap(), 1.414);
+        assert_eq!(custom_approx(a, 3).unwrap(), 1.414);
     }
 }

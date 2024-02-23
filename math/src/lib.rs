@@ -1,5 +1,5 @@
 pub mod root;
-pub mod round;
+pub mod approx;
 pub mod pow;
 
 #[cfg(test)]

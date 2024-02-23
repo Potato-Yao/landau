@@ -2,7 +2,6 @@
 //!
 use std::fs::File;
 use std::io::{Read};
-use std::string::ToString;
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -91,7 +90,6 @@ impl Lex {
         loop {
             match self.next() {
                 Token::Eos => {
-                    vec.push(Token::Eos);
                     break;
                 }
                 t => match t {
@@ -144,6 +142,7 @@ impl Lex {
             }
         }
         vec.extend(var_stack.into_iter());
+        vec.push(Token::Eos);
 
         Ok(vec)
     }
@@ -184,7 +183,7 @@ impl Lex {
                 let t = self.read_function();
                 match t {
                     Token::Function(fun, op, mut re) => {
-                        if fun == "var" {
+                        return if fun == "var" {
                             Token::Var(re.remove(0))
                         } else {
                             Token::Function(fun, op, re)
@@ -296,7 +295,7 @@ impl Lex {
                 _ => {
                     ch.is_alphanumeric() || ch == '_' || ch == '^' || ch == '.'
                         || ch == '+' || ch == '-' || ch == '*' || ch == '/'
-                        || ch == ' ' || ch == '\\'
+                        || ch == ' ' || ch == '\\' || ch == '='
                 }
             }
         });
@@ -404,45 +403,45 @@ mod tests {
 
     #[test]
     fn parse_test1() {
-        let test1 = "\\frac{k}{k_0} = \\left(\\frac{T}{T_0}\\right)^{1.5}\\left(\\frac{T_0 + T_s}{T + T_{s}}\\right)
+        let test = "\\frac{k}{k_0} = \\left(\\frac{T}{T_0}\\right)^{1.5}\\left(\\frac{T_0 + T_s}{T + T_{s}}\\right)
                 ".to_string();
-        let mut l1 = Lex::new(test1);
-        let v1 = l1.parse();
+        let mut l = Lex::new(test);
+        let v = l.parse();
 
-        for i in v1 {
+        for i in v {
             println!("{:?}", i);
         }
     }
 
     #[test]
     fn parse_test2() {
-        let test2 = "Pr = \\frac{\\mu{}c_p}{k}".to_string();
-        let mut l2 = Lex::new(test2);
-        let v2 = l2.parse();
+        let test = "Pr = \\frac{\\mu{}c_p}{k}".to_string();
+        let mut l = Lex::new(test);
+        let v = l.parse();
 
-        for i in v2 {
+        for i in v {
             println!("{:?}", i);
         }
     }
 
     #[test]
     fn parse_test3() {
-        let test3 = "\\vec{u}_A(x + \\Delta{}x, y + \\Delta{}y, z + \\Delta{}z, t)".to_string();
-        let mut l3 = Lex::new(test3);
-        let v3 = l3.parse();
+        let test = "\\vec{u}_A(x + \\Delta{}x, y + \\Delta{}y, z + \\Delta{}z, t)".to_string();
+        let mut l = Lex::new(test);
+        let v = l.parse();
 
-        for i in v3 {
+        for i in v {
             println!("{:?}", i);
         }
     }
 
     #[test]
     fn parse_test4() {
-        let test4 = "\\int_a^b{x}\\di{x}".to_string();
-        let mut l4 = Lex::new(test4);
-        let v4 = l4.parse();
+        let test = "\\int_a^b{x}\\di{x}".to_string();
+        let mut l = Lex::new(test);
+        let v = l.parse();
 
-        for i in v4 {
+        for i in v {
             println!("{:?}", i);
         }
     }
@@ -450,22 +449,33 @@ mod tests {
     /// this test stands for a typical scene which contains some basic functions
     #[test]
     fn parse_test5() {
-        let test5 = "\\frac{1}{2} + \\sqrt[3]{4}".to_string();
-        let mut l5 = Lex::new(test5);
-        let v5 = l5.parse();
+        let test = "\\frac{1}{2} + \\sqrt[3]{4}".to_string();
+        let mut l = Lex::new(test);
+        let v = l.parse();
 
-        for i in v5 {
+        for i in v {
             println!("{:?}", i);
         }
     }
 
     #[test]
     fn parse_test6() {
-        let test6 = "\\left(a + \\frac{b}{c}\\right) + d".to_string();
-        let mut l6 = Lex::new(test6);
-        let v6 = l6.parse();
+        let test = "\\left(a + \\frac{b}{c}\\right) + d".to_string();
+        let mut l = Lex::new(test);
+        let v = l.parse();
 
-        for i in v6 {
+        for i in v {
+            println!("{:?}", i);
+        }
+    }
+
+    #[test]
+    fn parse_test7() {
+        let test = "a+1\\var{a=1}".to_string();
+        let mut l = Lex::new(test);
+        let v = l.parse();
+
+        for i in v {
             println!("{:?}", i);
         }
     }

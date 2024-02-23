@@ -32,9 +32,9 @@ impl Exec {
 
         for var in vars.iter() {
             let s = var.replace(" ", "");
-            let mut s = s.split("=");
-            let (name, _, value) = (s.next().unwrap(), s.next(), s.next().unwrap());
-            var_map.insert(name.to_string(), string_to_known(&value.to_string()).get_value().unwrap());
+            let mut split = s.split("=");
+            let (name, value) = (split.next().unwrap(), split.next().unwrap());
+            var_map.insert(name.to_string(), string_to_known(&value.to_string()).unwrap().get_value().unwrap());
         }
 
         var_map
@@ -57,9 +57,9 @@ impl Exec {
                     Ok(result.unwrap())
                 }
                 Token::Expression(ref expr) => {
-                    let v = string_to_known(expr).get_value();
+                    let v = string_to_known(expr);
                     return match v {
-                        Some(f) => Ok(f),
+                        Some(f) => Ok(f.get_value().unwrap()),
                         None => match self.var_map.get(expr) {
                             Some(f) => Ok(f.clone()),
                             None => Err(format!("Can not get variable {expr}")),
@@ -108,14 +108,14 @@ impl Exec {
 mod tests {
     use crate::exec::Exec;
     use latex_analyzer::lex::Lex;
-    use math::round::custom_round;
+    use math::approx::custom_approx;
 
     #[test]
     fn exec_test1() {
         let lex = Lex::new("\\frac{1}{2} + \\sqrt[3]{4} - \\frac{1}{3}".to_string());
         let exec = Exec::from_lex(lex);
 
-        assert_eq!(custom_round(exec.calculate().unwrap(), 3).unwrap(), 1.754);
+        assert_eq!(custom_approx(exec.calculate().unwrap(), 3).unwrap(), 1.754);
     }
 
     #[test]
@@ -126,7 +126,7 @@ mod tests {
         assert_eq!(exec.calculate().unwrap(), 4.0);
     }
 
-    /// di has not implemented yet!
+    /// di has not been implemented yet!
     #[ignore]
     #[test]
     fn exec_test3() {
@@ -134,5 +134,13 @@ mod tests {
         let exec = Exec::from_lex(lex);
 
         assert_eq!(exec.calculate().unwrap(), 1.5);
+    }
+
+    #[test]
+    fn exec_test4() {
+        let lex = Lex::new("a+1\\var{a=1}".to_string());
+        let exec = Exec::from_lex(lex);
+
+        assert_eq!(exec.calculate().unwrap(), 2.0);
     }
 }

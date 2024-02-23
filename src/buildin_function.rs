@@ -45,7 +45,7 @@ pub fn sum_auto_filler(fun: fn(i32) -> f64, lo: i32, up: i32) -> Vec<f64> {
 
 #[cfg(test)]
 mod tests {
-    use math::round::custom_round;
+    use math::approx::custom_approx;
     use crate::buildin_function::{div, int, int_auto_filler};
 
     #[test]
@@ -60,7 +60,7 @@ mod tests {
         let lo = 1.0;
         let up = 2.0;
         let nu = int_auto_filler(fun, lo, up);
-        let re = custom_round(int(lo, up, nu).unwrap(), 3).unwrap();
+        let re = custom_approx(int(lo, up, nu).unwrap(), 3).unwrap();
 
         assert_eq!(re, 2.333);
     }

@@ -1,8 +1,5 @@
-use std::fs;
-use std::io::Read;
 use lazy_static::lazy_static;
 use serde::Deserialize;
-use crate::get_config_path;
 
 #[derive(Deserialize)]
 pub struct Config {
