@@ -46,8 +46,10 @@ impl Exec {
 
     fn evaluate_node(&self, node: &Node) -> Result<f64, String> {
         return if node.node_kind == NodeKind::Num {
-            assert!(!node.value.is_none());
-            match node.value.clone().unwrap() {
+            let Some(ref value) = node.value.as_ref() else {
+                return Err(format!("Node {node:?} can not get value"));
+            };
+            match value {
                 Token::Function(fun, op, re) => {
                     let fun = get_function(fun)?;
                     let op = strings_to_known(op);
@@ -56,15 +58,14 @@ impl Exec {
 
                     Ok(result.unwrap())
                 }
-                Token::Expression(ref expr) => {
-                    let v = string_to_known(expr);
-                    return match v {
+                Token::Expression(expr) => {
+                    return match string_to_known(expr) {
                         Some(f) => Ok(f.get_value().unwrap()),
                         None => match self.var_map.get(expr) {
                             Some(f) => Ok(f.clone()),
                             None => Err(format!("Can not get variable {expr}")),
                         }
-                    }
+                    };
                 }
                 _ => Err(format!("Can not evaluate {node:?}")),
             }

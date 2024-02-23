@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use crate::function::Known;
 
-pub fn strings_to_known(v: Vec<String>) -> Vec<Box<dyn Known>>{
+pub fn strings_to_known(v: &Vec<String>) -> Vec<Box<dyn Known>>{
     v.iter().map(|s| string_to_known(s).unwrap()).collect()
 }
 

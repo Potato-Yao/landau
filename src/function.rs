@@ -81,15 +81,15 @@ pub fn register_extern_function(fun: Function) -> Result<(), String> {
 /// build-in functions take the priority,
 /// so if there`s an extern function which has a same name as a build-in function,
 /// the extern function will never be gotten
-pub fn get_function<'a>(name: String) -> Result<&'a Function, String> {
+pub fn get_function<'a>(name: &String) -> Result<&'a Function, String> {
     if let Some(fun) =
-        BUILD_IN_FUNCTION.iter().find(|f| f.name == name)
+        BUILD_IN_FUNCTION.iter().find(|f| f.name == *name)
     {
         return Ok(fun);
     } else {
         unsafe {
             if let Some(fun) =
-                EXTERN_FUNCTION.iter().find(|f| f.name == name)
+                EXTERN_FUNCTION.iter().find(|f| f.name == *name)
             {
                 return Ok(fun);
             }
@@ -122,7 +122,7 @@ mod tests {
 
     #[test]
     fn get_function_test() {
-        let fun = get_function("frac".to_string()).unwrap();
+        let fun = get_function(&"frac".to_string()).unwrap();
         assert_eq!(fun.name, "frac");
         assert_eq!((fun.calc)(vec![], vec![Box::new(1.0), Box::new(2.0)]).unwrap(), 0.5);
     }
@@ -134,7 +134,7 @@ mod tests {
         }, 1);
 
         register_extern_function(re).expect("Register function failed!");
-        let fun = get_function("double".to_string()).unwrap();
+        let fun = get_function(&"double".to_string()).unwrap();
         assert_eq!((fun.calc)(vec![], vec![Box::new(10.0)]).unwrap(), 20.0);
     }
 }
