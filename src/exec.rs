@@ -91,7 +91,7 @@ impl Exec {
             Token::Div => left / right,
             Token::Superscript(_) => {
                 if config::CONFIG.high_accuracy {
-                    math::pow::high_accuracy_pow(left, right)
+                    math::util::pow::high_accuracy_pow(left, right)
                 } else {
                     pow(left, right as usize)
                 }
@@ -107,7 +107,7 @@ impl Exec {
 mod tests {
     use crate::exec::Exec;
     use latex_analyzer::lex::Lex;
-    use math::approx::custom_approx;
+    use math::util::approx::custom_approx;
 
     #[test]
     fn exec_test1() {

@@ -1,6 +1,4 @@
-pub mod root;
-pub mod approx;
-pub mod pow;
+pub mod util;
 
 #[cfg(test)]
 mod tests {

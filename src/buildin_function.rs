@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use math::root::nth_root;
+use math::util::root::nth_root;
 use crate::function::Function;
 
 pub(crate) static mut EXTERN_FUNCTION: Vec<Function> = Vec::new();
@@ -81,7 +81,7 @@ pub fn sum_auto_filler(fun: fn(i32) -> f64, lo: i32, up: i32) -> Vec<f64> {
 
 #[cfg(test)]
 mod tests {
-    use math::approx::custom_approx;
+    use math::util::approx::custom_approx;
     use crate::buildin_function::{div, int, int_auto_filler};
 
     #[test]

@@ -14,8 +14,8 @@ pub fn nth_root(x: f64, n: i32) -> Option<f64> {
 
 #[cfg(test)]
 mod tests {
-    use crate::root::nth_root;
-    use crate::approx::custom_approx;
+    use crate::util::root::nth_root;
+    use crate::util::approx::custom_approx;
 
     #[test]
     fn root_test() {

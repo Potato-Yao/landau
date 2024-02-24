@@ -8,7 +8,7 @@ pub fn custom_approx(u: f64, d: u32) -> Option<f64> {
 
 #[cfg(test)]
 mod tests {
-    use crate::approx::custom_approx;
+    use crate::util::approx::custom_approx;
 
     #[test]
     fn round_test() {
