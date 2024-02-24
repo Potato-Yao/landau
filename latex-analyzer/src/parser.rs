@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn to_postfix_proto_test1() {
-        let mut lex = Lex::new("a + b * (c - d) / e".to_string());
+        let mut lex = Lex::new(r"a + b * (c - d) / e".to_string());
         let parser = Parser::from_lex(&mut lex);
         let proto = parser.to_postfix_proto();
 
@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn to_postfix_proto_test2() {
-        let mut lex = Lex::new("a + (\\frac{1}{2} + 3) * \\sqrt[3]{2}".to_string());
+        let mut lex = Lex::new(r"a + (\frac{1}{2} + 3) * \sqrt[3]{2}".to_string());
         let parser = Parser::from_proto(lex.parse());
         let proto = parser.to_postfix_proto();
 

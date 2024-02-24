@@ -403,7 +403,7 @@ mod tests {
 
     #[test]
     fn parse_test1() {
-        let test = "\\frac{k}{k_0} = \\left(\\frac{T}{T_0}\\right)^{1.5}\\left(\\frac{T_0 + T_s}{T + T_{s}}\\right)
+        let test = r"\frac{k}{k_0} = \left(\frac{T}{T_0}\right)^{1.5}\left(\frac{T_0 + T_s}{T + T_{s}}\right)
                 ".to_string();
         let mut l = Lex::new(test);
         let v = l.parse();
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn parse_test2() {
-        let test = "Pr = \\frac{\\mu{}c_p}{k}".to_string();
+        let test = r"Pr = \frac{\mu{}c_p}{k}".to_string();
         let mut l = Lex::new(test);
         let v = l.parse();
 
@@ -426,7 +426,7 @@ mod tests {
 
     #[test]
     fn parse_test3() {
-        let test = "\\vec{u}_A(x + \\Delta{}x, y + \\Delta{}y, z + \\Delta{}z, t)".to_string();
+        let test = r"\vec{u}_A(x + \Delta{}x, y + \Delta{}y, z + \Delta{}z, t)".to_string();
         let mut l = Lex::new(test);
         let v = l.parse();
 
@@ -437,7 +437,7 @@ mod tests {
 
     #[test]
     fn parse_test4() {
-        let test = "\\int_a^b{x}\\di{x}".to_string();
+        let test = r"\int_a^b{x}\di{x}".to_string();
         let mut l = Lex::new(test);
         let v = l.parse();
 
@@ -449,7 +449,7 @@ mod tests {
     /// this test stands for a typical scene which contains some basic functions
     #[test]
     fn parse_test5() {
-        let test = "\\frac{1}{2} + \\sqrt[3]{4}".to_string();
+        let test = r"\frac{1}{2} + \sqrt[3]{4}".to_string();
         let mut l = Lex::new(test);
         let v = l.parse();
 
@@ -460,7 +460,7 @@ mod tests {
 
     #[test]
     fn parse_test6() {
-        let test = "\\left(a + \\frac{b}{c}\\right) + d".to_string();
+        let test = r"\left(a + \frac{b}{c}\right) + d".to_string();
         let mut l = Lex::new(test);
         let v = l.parse();
 
@@ -471,7 +471,7 @@ mod tests {
 
     #[test]
     fn parse_test7() {
-        let test = "a+1\\var{a=1}".to_string();
+        let test = r"a+1\var{a=1}".to_string();
         let mut l = Lex::new(test);
         let v = l.parse();
 

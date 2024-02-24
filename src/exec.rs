@@ -111,7 +111,7 @@ mod tests {
 
     #[test]
     fn exec_test1() {
-        let lex = Lex::new("\\frac{1}{2} + \\sqrt[3]{4} - \\frac{1}{3}".to_string());
+        let lex = Lex::new(r"\frac{1}{2} + \sqrt[3]{4} - \frac{1}{3}".to_string());
         let exec = Exec::from_lex(lex);
 
         assert_eq!(custom_approx(exec.calculate().unwrap(), 3).unwrap(), 1.754);
@@ -129,7 +129,7 @@ mod tests {
     #[ignore]
     #[test]
     fn exec_test3() {
-        let lex = Lex::new("\\int_1^2x\\di{x}".to_string());
+        let lex = Lex::new(r"\int_1^2x\di{x}".to_string());
         let exec = Exec::from_lex(lex);
 
         assert_eq!(exec.calculate().unwrap(), 1.5);
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn exec_test4() {
-        let lex = Lex::new("a+1\\var{a=1}".to_string());
+        let lex = Lex::new(r"a+1\var{a=1}".to_string());
         let exec = Exec::from_lex(lex);
 
         assert_eq!(exec.calculate().unwrap(), 2.0);
