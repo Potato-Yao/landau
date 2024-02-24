@@ -1,3 +1,39 @@
+use lazy_static::lazy_static;
+use math::root::nth_root;
+use crate::function::Function;
+
+pub(crate) static mut EXTERN_FUNCTION: Vec<Function> = Vec::new();
+
+lazy_static! {
+    pub static ref BUILD_IN_FUNCTION: Vec<Function> = {
+        let mut table = Vec::new();
+        table.push(Function::new("frac", |_, r| {
+            div(r[0].get_value().unwrap(), r[1].get_value().unwrap())
+        }));
+        table.push(Function::new("sqrt", |o, r| {
+            nth_root(r[0].get_value().unwrap(), o[0].get_value().unwrap() as i32)
+        }));
+        table.push(Function::new("int", |o, r| {
+            let r = r.iter()
+                .map(|x| x.get_value().unwrap()).collect();
+            int(o[0].get_value().unwrap(), o[1].get_value().unwrap(), r)
+        }));
+        table.push(Function::new("sum", |_, r| {
+            let r = r.iter()
+                .map(|x| x.get_value().unwrap()).collect();
+            sum(r)
+        }));
+
+        table
+    };
+}
+
+lazy_static! {
+    pub static ref HUGE_SYMBOL: Vec<String> = {
+        vec!["int".to_string(), "sum".to_string(), "prod".to_string()]
+    };
+}
+
 /// a / b
 pub(crate) fn div(a: f64, b: f64) -> Option<f64> {
     return if b == 0.0 {

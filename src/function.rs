@@ -1,6 +1,4 @@
-use lazy_static::lazy_static;
-use math::root::nth_root;
-use crate::buildin_function::{div, int, sum};
+use crate::buildin_function::*;
 
 /// A type who impls Known can return a certain value just by itself.
 pub trait Known {
@@ -26,49 +24,15 @@ type CalcContainer = fn(Container, Container) -> Option<f64>;
 pub struct Function {
     pub name: String,
     pub calc: CalcContainer,
-    pub required_args_count: u8,
 }
 
 impl Function {
-    pub fn new(name: &str, calc: CalcContainer, required_args_count: u8) -> Self {
+    pub fn new(name: &str, calc: CalcContainer) -> Self {
         Function {
             name: name.to_string(),
             calc,
-            required_args_count,
         }
     }
-}
-
-static mut EXTERN_FUNCTION: Vec<Function> = Vec::new();
-
-lazy_static! {
-    static ref BUILD_IN_FUNCTION: Vec<Function> = {
-        let mut table = Vec::new();
-        table.push(Function::new("frac", |_o, r| {
-            div(r[0].get_value().unwrap(), r[1].get_value().unwrap())
-        }, 2));
-        table.push(Function::new("sqrt", |o, r| {
-            nth_root(r[0].get_value().unwrap(), o[0].get_value().unwrap() as i32)
-        }, 1));
-        table.push(Function::new("int", |o, r| {
-            let r = r.iter()
-                .map(|x| x.get_value().unwrap()).collect();
-            int(o[0].get_value().unwrap(), o[1].get_value().unwrap(), r)
-        }, 1));
-        table.push(Function::new("sum", |_o, r| {
-            let r = r.iter()
-                .map(|x| x.get_value().unwrap()).collect();
-            sum(r)
-        }, 1));
-
-        table
-    };
-}
-
-lazy_static! {
-    pub static ref HUGE_SYMBOL: Vec<String> = {
-        vec!["int".to_string(), "sum".to_string(), "prod".to_string()]
-    };
 }
 
 pub fn register_extern_function(fun: Function) -> Result<(), String> {
@@ -110,7 +74,6 @@ mod tests {
             calc: |_o, r| {
                 Some(r[0].get_value().unwrap() / r[1].get_value().unwrap())
             },
-            required_args_count: 2,
         };
 
         let a = (frac.calc)(vec![], vec![Box::new(1.0), Box::new(2.0)]);
@@ -131,7 +94,7 @@ mod tests {
     fn register_function_test() {
         let re = Function::new("double", |_o, r| {
             Some(r[0].get_value().unwrap() * 2.0)
-        }, 1);
+        });
 
         register_extern_function(re).expect("Register function failed!");
         let fun = get_function(&"double".to_string()).unwrap();

@@ -16,10 +16,8 @@ pub struct Exec {
 
 impl Exec {
     pub fn from_lex(mut lex: Lex) -> Exec {
-        let proto = lex.parse();
-        let parser = Parser::from_proto(proto);
-        let proto = parser.to_postfix_proto();
-        let ast = AST::new(proto);
+        let parser = Parser::from_proto(lex.parse());
+        let ast = AST::new(parser.to_postfix_proto());
 
         Exec {
             node: ast.0,
