@@ -3,5 +3,5 @@
 /math/target
 /.idea
 /.idea/*.*
-/math/linear-algebra/.idea
-/math/linear-algebra/cmake-build-debug
+/math/src/linear_algebra/cmake-build-debug
+/math/src/linear_algebra/.idea
