@@ -21,9 +21,9 @@ mod tests {
             let result = matrix_init(&mut matrix_ptr, rows as c_int, cols as c_int);
             if result == 0 {
                 let matrix = &*matrix_ptr;
-                println!("{:?}", matrix); // 使用 Debug trait 打印
+                println!("{:?}", matrix);
             } else {
-                println!("矩阵初始化失败，错误代码: {}", result);
+                println!("Can not init matrix with error code: {}", result);
             }
         }
     }
