@@ -8,6 +8,7 @@ build = "build.rs"
 
 [dependencies]
 bindgen = "0.69.4"
+libc = "0.2.153"
 
 [build-dependencies]
 bindgen = "0.69.4"
