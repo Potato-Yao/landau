@@ -5,3 +5,5 @@
 /.idea/*.*
 /math/src/linear_algebra/cmake-build-debug
 /math/src/linear_algebra/.idea
+*.o
+*.a
