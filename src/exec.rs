@@ -32,7 +32,7 @@ impl Exec {
             let s = var.replace(" ", "");
             let mut split = s.split("=");
             let (name, value) = (split.next().unwrap(), split.next().unwrap());
-            var_map.insert(name.to_string(), string_to_known(&value.to_string()).unwrap().get_value().unwrap());
+            var_map.insert(name.to_string(), string_to_known(&value.to_string()).unwrap().get_value());
         }
 
         var_map
@@ -58,7 +58,7 @@ impl Exec {
                 }
                 Token::Expression(expr) => {
                     return match string_to_known(expr) {
-                        Some(f) => Ok(f.get_value().unwrap()),
+                        Some(f) => Ok(f.get_value()),
                         None => match self.var_map.get(expr) {
                             Some(f) => Ok(f.clone()),
                             None => Err(format!("Can not get variable {expr}")),

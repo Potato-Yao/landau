@@ -56,7 +56,7 @@ mod tests {
         let frac = Function {
             name: "frac".to_string(),
             calc: |_o, r| {
-                Some(r[0].get_value().unwrap() / r[1].get_value().unwrap())
+                Some(r[0].get_value() / r[1].get_value())
             },
         };
 
@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn register_function_test() {
         let re = Function::new("double", |_o, r| {
-            Some(r[0].get_value().unwrap() * 2.0)
+            Some(r[0].get_value() * 2.0)
         });
 
         register_extern_function(re).expect("Register function failed!");

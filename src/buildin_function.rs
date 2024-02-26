@@ -8,19 +8,19 @@ lazy_static! {
     pub static ref BUILD_IN_FUNCTION: Vec<Function> = {
         let mut table = Vec::new();
         table.push(Function::new("frac", |_, r| {
-            div(r[0].get_value().unwrap(), r[1].get_value().unwrap())
+            div(r[0].get_value(), r[1].get_value())
         }));
         table.push(Function::new("sqrt", |o, r| {
-            nth_root(r[0].get_value().unwrap(), o[0].get_value().unwrap() as i32)
+            nth_root(r[0].get_value(), o[0].get_value() as i32)
         }));
         table.push(Function::new("int", |o, r| {
             let r = r.iter()
-                .map(|x| x.get_value().unwrap()).collect();
-            int(o[0].get_value().unwrap(), o[1].get_value().unwrap(), r)
+                .map(|x| x.get_value()).collect();
+            int(o[0].get_value(), o[1].get_value(), r)
         }));
         table.push(Function::new("sum", |_, r| {
             let r = r.iter()
-                .map(|x| x.get_value().unwrap()).collect();
+                .map(|x| x.get_value()).collect();
             sum(r)
         }));
 
