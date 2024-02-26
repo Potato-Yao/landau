@@ -1,10 +1,10 @@
 use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
-use crate::{LaTeXExpression, Matrix, matrix_init, matrix_latex};
+use crate::{LaTeXExpression, Matrix, matrix_destroy, matrix_init, matrix_item_replace, matrix_latex, matrix_row_exchange, matrix_row_replace, matrix_transpose};
 
 impl Matrix {
-    fn new(rows: i32, cols: i32) -> Result<Box<Matrix>, String> {
+    pub fn new(rows: i32, cols: i32) -> Result<Box<Matrix>, String> {
         unsafe {
             let mut matrix_ptr: *mut Matrix = null_mut();
             let stat = matrix_init(&mut matrix_ptr, rows, cols);
@@ -13,6 +13,59 @@ impl Matrix {
                 -1 => Err(format!("rows {rows} or cols {cols} is less than zero")),
                 1 => Err("Malloc for matrix or array of Matrix failed".to_string()),
                 _ => Err("Unknown err!".to_string()),
+            }
+        }
+    }
+
+    pub fn new_identity_matrix(dimension: i32) -> Result<Box<Matrix>, String> {
+        let matrix = Matrix::new(dimension, dimension)?;
+
+        for i in 0..dimension {
+            let _ = matrix.set_item(i, i, 1.0);
+        }
+
+        Ok(matrix)
+    }
+
+    pub fn from_transpose(origin: &Matrix) -> Result<Box<Matrix>, String> {
+        unsafe {
+            let mut matrix_ptr: *mut Matrix = null_mut();
+            let stat = matrix_transpose(origin as *const _, &mut matrix_ptr);
+            match stat {
+                0 => Ok(Box::from_raw(matrix_ptr)),
+                1 => Err("Malloc for matrix or array of Matrix failed".to_string()),
+                _ => Err("Unknown err!".to_string()),
+            }
+        }
+    }
+
+    pub fn set_row(&self, index: i32, row: Vec<f64>) -> Result<(), String> {
+        unsafe {
+            let stat =
+                matrix_row_replace(self as *const _, index, row.as_ptr(), row.len() as c_int);
+            match stat {
+                -1 => Err(format!("index {index} is less than zero or greater than rows of matrix")),
+                _ => Ok(()),
+            }
+        }
+    }
+
+    pub fn set_item(&self, row: i32, col: i32, value: f64) -> Result<(), String> {
+        unsafe {
+            let stat = matrix_item_replace(self as *const _, row, col, value);
+            match stat {
+                -1 => Err(format!("{row} or {col} is less than zero or greater than the row/col of matrix")),
+                _ => Ok(()),
+            }
+        }
+    }
+
+    pub fn exchange_row(&self, row1: i32, row2: i32) -> Result<(), String> {
+        unsafe {
+            let stat = matrix_row_exchange(self as *const _, row1, row2);
+            match stat {
+                -1 => Err(format!("{row1} or {row2} is less than zero or greater than the row of matrix")),
+                _ => Ok(()),
             }
         }
     }
@@ -40,7 +93,9 @@ impl LaTeXExpression for Matrix {
 
 impl Drop for Matrix {
     fn drop(&mut self) {
-        todo!()
+        unsafe {
+            matrix_destroy(self as *mut _);
+        }
     }
 }
 
@@ -59,5 +114,41 @@ mod tests {
     fn latex_test() {
         let m = Matrix::new(3, 4).unwrap();
         println!("{}", m.get_expression().unwrap());
+    }
+
+    #[test]
+    fn new_identity_matrix_test() {
+        let m = Matrix::new_identity_matrix(3).unwrap();
+        println!("{}", m.get_expression().unwrap());
+    }
+
+    #[test]
+    fn set_row_test() {
+        let m = Matrix::new(3, 4).unwrap();
+        m.set_row(1, vec![2.0, 3.0, 4.0, 5.0]).unwrap();
+        println!("{}", m.get_expression().unwrap());
+    }
+
+    #[test]
+    fn set_item_test() {
+        let m = Matrix::new(3, 4).unwrap();
+        m.set_item(2, 2, 5.0).unwrap();
+        println!("{}", m.get_expression().unwrap());
+    }
+
+    #[test]
+    fn exchange_row_test() {
+        let m = Matrix::new_identity_matrix(3).unwrap();
+        m.exchange_row(0, 1).unwrap();
+        println!("{}", m.get_expression().unwrap());
+    }
+
+    #[test]
+    fn from_transpose_test() {
+        let m = Matrix::new(3, 4).unwrap();
+        m.set_row(0, vec![1.0, 2.0, 3.0, 4.0]).unwrap();
+        m.set_item(2, 2, 9.0).unwrap();
+        let m1 = Matrix::from_transpose(&m).unwrap();
+        println!("{}", m1.get_expression().unwrap());
     }
 }

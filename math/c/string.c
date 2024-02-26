@@ -31,6 +31,7 @@ static int string_resize(String *s, const int new) {
         return -1;
     }
 
+    // todo realloc as multiple of 4 byte
     char *new_data = realloc(s->data, new * sizeof(char));
     if (new_data == NULL) {
         return 1;

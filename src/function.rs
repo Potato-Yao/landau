@@ -1,21 +1,5 @@
 use crate::buildin_function::*;
-
-/// A type who impls Known can return a certain value just by itself.
-pub trait Known {
-    fn get_value(&self) -> Option<f64>;
-}
-
-impl Known for f64 {
-    fn get_value(&self) -> Option<f64> {
-        Some(*self)
-    }
-}
-
-impl Known for i32 {
-    fn get_value(&self) -> Option<f64> {
-        Some(*self as f64)
-    }
-}
+use crate::known::Known;
 
 type Container = Vec<Box<dyn Known>>;
 type CalcContainer = fn(Container, Container) -> Option<f64>;
