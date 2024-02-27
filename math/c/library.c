@@ -33,6 +33,24 @@ int main() {
     printf("%s\n", pr);
     matrix_destroy(matrix);
 
+    Matrix *matrix2, *matrix3, *matrix4;
+    matrix_init(&matrix2, 2, 2);
+    matrix_init(&matrix3, 2, 2);
+    const double r21[2] = {1.0, 1.0};
+    const double r22[2] = {2.0, -1.0};
+    const double r31[2] = {2.0, 2.0};
+    const double r32[2] = {3.0, 4.0};
+    matrix_row_replace(matrix2, 0, r21, 2);
+    matrix_row_replace(matrix2, 1, r22, 2);
+    matrix_row_replace(matrix3, 0, r31, 2);
+    matrix_row_replace(matrix3, 1, r32, 2);
+    matrix_mul(matrix2, matrix3, &matrix4);
+    matrix_latex(matrix4, &pr);
+    printf("%s\n", pr);
+    matrix_destroy(matrix2);
+    matrix_destroy(matrix3);
+    matrix_destroy(matrix4);
+
     String *string;
     string_init(&string);
     int a = string_append(string, "Hi");

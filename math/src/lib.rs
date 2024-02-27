@@ -15,6 +15,5 @@ pub trait LaTeXExpression {
 mod tests {
     #[test]
     fn test() {
-
     }
 }

@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 /// A type who impls Known can return a certain value just by itself.
 pub trait Known {
     fn get_value(&self) -> f64;

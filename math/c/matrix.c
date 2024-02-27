@@ -3,6 +3,8 @@
 //
 
 #include "matrix.h"
+
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -124,6 +126,26 @@ int matrix_transpose(const Matrix *origin, Matrix **matrix) {
         }
     }
     *matrix = m;
+
+    return 0;
+}
+
+int matrix_mul(const Matrix *matrix1, const Matrix *matrix2, Matrix **mul) {
+    if (matrix1 == NULL || matrix2 == NULL) return 1;
+    if (matrix1->cols != matrix2->rows) return -2;
+
+    Matrix *mat;
+    const int stat = matrix_init(&mat, matrix1->rows, matrix2->cols);
+    if (stat != 0) return stat;
+
+    for (int i = 0; i < mat->rows; i++) {
+        for (int j = 0; j < mat->cols; j++) {
+            for (int k = 0; k < matrix1->cols; k++) {
+                mat->data[i][j] += matrix1->data[i][k] * matrix2->data[k][j];
+            }
+        }
+    }
+    *mul = mat;
 
     return 0;
 }

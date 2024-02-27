@@ -1,7 +1,8 @@
 use std::ffi::CStr;
+use std::ops::Mul;
 use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
-use crate::{LaTeXExpression, Matrix, matrix_destroy, matrix_init, matrix_item_replace, matrix_latex, matrix_row_exchange, matrix_row_replace, matrix_transpose};
+use crate::{LaTeXExpression, Matrix, matrix_destroy, matrix_init, matrix_item_replace, matrix_latex, matrix_mul, matrix_row_exchange, matrix_row_replace, matrix_transpose};
 
 impl Matrix {
     pub fn new(rows: i32, cols: i32) -> Result<Box<Matrix>, String> {
@@ -66,6 +67,23 @@ impl Matrix {
             match stat {
                 -1 => Err(format!("{row1} or {row2} is less than zero or greater than the row of matrix")),
                 _ => Ok(()),
+            }
+        }
+    }
+}
+
+impl Mul<Box<Matrix>> for Box<Matrix> {
+    type Output = Box<Matrix>;
+
+    fn mul(self, rhs: Box<Matrix>) -> Self::Output {
+        unsafe {
+            let mut matrix_ptr: *mut Matrix = null_mut();
+            let stat = matrix_mul(&*self, &*rhs, &mut matrix_ptr);
+            match stat {
+                0 => Box::from_raw(matrix_ptr),
+                -2 => panic!("cols of lhs is not equal to rows of rhs!"),
+                1 => panic!("Malloc for matrix or array of Matrix failed"),
+                _ => panic!("Unknown err!"),
             }
         }
     }
@@ -150,5 +168,19 @@ mod tests {
         m.set_item(2, 2, 9.0).unwrap();
         let m1 = Matrix::from_transpose(&m).unwrap();
         println!("{}", m1.get_expression().unwrap());
+    }
+
+    #[test]
+    fn mul_test() {
+        let m1 = Matrix::new(2, 2).unwrap();
+        m1.set_row(0, vec![1.0, 1.0]).unwrap();
+        m1.set_row(1, vec![2.0, -1.0]).unwrap();
+
+        let m2 = Matrix::new(2, 2).unwrap();
+        m2.set_row(0, vec![2.0, 2.0]).unwrap();
+        m2.set_row(1, vec![3.0, 4.0]).unwrap();
+
+        let m3: Box<Matrix> = m1 * m2;
+        println!("{}", m3.get_expression().unwrap());
     }
 }

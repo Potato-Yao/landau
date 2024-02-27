@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use bindgen::CargoCallbacks;
 
 fn main() {
+    println!("Start to generate bindings");
     // This is the directory where the `c` library is located.
     let libdir_path = PathBuf::from("./c")
         // Canonicalize the path as `rustc-link-search` requires an absolute
@@ -12,6 +13,7 @@ fn main() {
 
     let headers = vec!["matrix", "string"];
     for header in headers.into_iter() {
+        println!("Now building {}", header);
         // This is the path to the `c` headers file.
         let headers_path = libdir_path.join(format!("{}.h", header));
         let headers_path_str = headers_path.to_str().expect("Path is not a valid string");

@@ -27,6 +27,10 @@ int matrix_transpose(const Matrix *origin, Matrix **matrix);
 
 int matrix_det(const Matrix *matrix, double *value);
 
+int matrix_lu_decomposition(const Matrix *origin, Matrix **l_matrix, Matrix **u_matrix);
+
+int matrix_mul(const Matrix *matrix1, const Matrix *matrix2, Matrix **mul);
+
 int matrix_latex(const Matrix *matrix, char **string);
 
 #endif //MATRIX_H
