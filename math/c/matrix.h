@@ -5,6 +5,12 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#define SUCCESS_CODE 0
+#define ARGUMENT_NULL_ERROR -1
+#define ALLOCATION_FAILURE_ERROR -2
+#define INDEX_OUT_OF_BOUNDS_ERROR 1
+#define INDEX_MISMATCH_ERROR 2
+
 typedef struct {
     int rows;
     int cols;
@@ -28,6 +34,10 @@ int matrix_transpose(const Matrix *origin, Matrix **matrix);
 int matrix_det(const Matrix *matrix, double *value);
 
 int matrix_lu_decomposition(const Matrix *origin, Matrix **l_matrix, Matrix **u_matrix);
+
+int matrix_add(const Matrix *matrix1, const Matrix *matrix2, Matrix **add);
+
+int matrix_tim(const Matrix *origin, double factor, Matrix **matrix);
 
 int matrix_mul(const Matrix *matrix1, const Matrix *matrix2, Matrix **mul);
 

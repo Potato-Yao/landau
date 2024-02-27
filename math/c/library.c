@@ -48,8 +48,20 @@ int main() {
     matrix_latex(matrix4, &pr);
     printf("%s\n", pr);
     matrix_destroy(matrix2);
+
+    Matrix *matrix5;
+    matrix_add(matrix3, matrix4, &matrix5);
+    matrix_latex(matrix5, &pr);
+    printf("%s\n", pr);
     matrix_destroy(matrix3);
     matrix_destroy(matrix4);
+
+    Matrix *matrix6;
+    matrix_tim(matrix5, 2.5, &matrix6);
+    matrix_latex(matrix6, &pr);
+    printf("%s\n", pr);
+    matrix_destroy(matrix5);
+    matrix_destroy(matrix6);
 
     String *string;
     string_init(&string);

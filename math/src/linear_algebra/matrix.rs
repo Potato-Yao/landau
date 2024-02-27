@@ -1,8 +1,8 @@
 use std::ffi::CStr;
-use std::ops::Mul;
+use std::ops::{Add, Mul, Neg, Sub};
 use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
-use crate::{LaTeXExpression, Matrix, matrix_destroy, matrix_init, matrix_item_replace, matrix_latex, matrix_mul, matrix_row_exchange, matrix_row_replace, matrix_transpose};
+use crate::{LaTeXExpression, Matrix, matrix_add, matrix_destroy, matrix_init, matrix_item_replace, matrix_latex, matrix_mul, matrix_row_exchange, matrix_row_replace, matrix_tim, matrix_transpose};
 
 impl Matrix {
     pub fn new(rows: i32, cols: i32) -> Result<Box<Matrix>, String> {
@@ -72,19 +72,71 @@ impl Matrix {
     }
 }
 
-impl Mul<Box<Matrix>> for Box<Matrix> {
+macro_rules! stat_with_Box_and_panic {
+    ($s: expr, $ptr: expr) => {
+        {
+            let stat: i32 = $s;
+            let matrix: *mut Matrix = $ptr;
+            match stat {
+                0 => return Box::from_raw(matrix),
+                -1 => panic!("input argument is null"),
+                -2 => panic!("alloc for Matrix failed"),
+                1 => panic!("index out of bounds"),
+                2 => panic!("rows or cols mismatched"),
+                _ => panic!("unknown error code"),
+            }
+        }
+    };
+}
+
+impl Add<&Matrix> for &Matrix {
     type Output = Box<Matrix>;
 
-    fn mul(self, rhs: Box<Matrix>) -> Self::Output {
+    fn add(self, rhs: &Matrix) -> Self::Output {
+        unsafe {
+            let mut matrix_ptr: *mut Matrix = null_mut();
+            let stat = matrix_add(&*self, &*rhs, &mut matrix_ptr);
+            stat_with_Box_and_panic!(stat, matrix_ptr);
+        }
+    }
+}
+
+impl Sub<&Matrix> for &Matrix {
+    type Output = Box<Matrix>;
+
+    fn sub(self, rhs: &Matrix) -> Self::Output {
+        self + &*(-rhs)
+    }
+}
+
+impl Mul<f64> for &Matrix {
+    type Output = Box<Matrix>;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        unsafe {
+            let mut matrix_ptr: *mut Matrix = null_mut();
+            let stat = matrix_tim(&*self, rhs, &mut matrix_ptr);
+            stat_with_Box_and_panic!(stat, matrix_ptr);
+        }
+    }
+}
+
+impl Neg for &Matrix {
+    type Output = Box<Matrix>;
+
+    fn neg(self) -> Self::Output {
+        self * -1f64
+    }
+}
+
+impl Mul<&Matrix> for &Matrix {
+    type Output = Box<Matrix>;
+
+    fn mul(self, rhs: &Matrix) -> Self::Output {
         unsafe {
             let mut matrix_ptr: *mut Matrix = null_mut();
             let stat = matrix_mul(&*self, &*rhs, &mut matrix_ptr);
-            match stat {
-                0 => Box::from_raw(matrix_ptr),
-                -2 => panic!("cols of lhs is not equal to rows of rhs!"),
-                1 => panic!("Malloc for matrix or array of Matrix failed"),
-                _ => panic!("Unknown err!"),
-            }
+            stat_with_Box_and_panic!(stat, matrix_ptr);
         }
     }
 }
@@ -171,7 +223,7 @@ mod tests {
     }
 
     #[test]
-    fn mul_test() {
+    fn op_test() {
         let m1 = Matrix::new(2, 2).unwrap();
         m1.set_row(0, vec![1.0, 1.0]).unwrap();
         m1.set_row(1, vec![2.0, -1.0]).unwrap();
@@ -180,7 +232,13 @@ mod tests {
         m2.set_row(0, vec![2.0, 2.0]).unwrap();
         m2.set_row(1, vec![3.0, 4.0]).unwrap();
 
-        let m3: Box<Matrix> = m1 * m2;
+        let m3 = &*m1 * &*m2;
         println!("{}", m3.get_expression().unwrap());
+
+        let m4 = &*m1 + &*m2;
+        println!("{}", m4.get_expression().unwrap());
+
+        let m5 = &*m1 - &*m2;
+        println!("{}", m5.get_expression().unwrap());
     }
 }
