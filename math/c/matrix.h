@@ -11,6 +11,22 @@
 #define INDEX_OUT_OF_BOUNDS_ERROR 1
 #define INDEX_MISMATCH_ERROR 2
 
+#define CHECK_INDEX_GREATER_THAN_ZERO0(index) if (index < 0) return ARGUMENT_NULL_ERROR
+#define CHECK_INDEX_OUT_OF_BOUNDS(index, max) if (index < 0 || index > max) return INDEX_OUT_OF_BOUNDS_ERROR
+
+#define CHECK_INDEX_MISMATCH(x, y) if (x != y) return INDEX_MISMATCH_ERROR;
+
+#define CHECK_ALLOCATION_NULL(size) \
+    ({ \
+        void *_ptr = malloc(size); \
+        if (_ptr == NULL) { \
+            return ALLOCATION_FAILURE_ERROR; \
+        } \
+        _ptr; \
+    })
+
+#define CHECK_ARGUMENT_NULL(x) if (x == NULL) return ARGUMENT_NULL_ERROR
+
 typedef struct {
     int rows;
     int cols;
@@ -40,6 +56,8 @@ int matrix_add(const Matrix *matrix1, const Matrix *matrix2, Matrix **add);
 int matrix_tim(const Matrix *origin, double factor, Matrix **matrix);
 
 int matrix_mul(const Matrix *matrix1, const Matrix *matrix2, Matrix **mul);
+
+int matrix_lu_decompose(const Matrix *origin, Matrix **matrix);
 
 int matrix_latex(const Matrix *matrix, char **string);
 

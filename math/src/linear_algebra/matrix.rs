@@ -4,17 +4,49 @@ use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
 use crate::{LaTeXExpression, Matrix, matrix_add, matrix_destroy, matrix_init, matrix_item_replace, matrix_latex, matrix_mul, matrix_row_exchange, matrix_row_replace, matrix_tim, matrix_transpose};
 
+macro_rules! err_for_error_code {
+    ($s: expr) => {
+        match $s {
+            -1 => "input argument is null",
+            -2 => "alloc for Matrix failed",
+            1 => "index out of bounds",
+            2 => "rows or cols mismatched",
+            _ => "unknown error code",
+        }
+    };
+}
+
+macro_rules! stat_with_Result {
+    ($s: expr, $ptr: expr) => {
+        match $s {
+            0 => return Ok(Box::from_raw($ptr)),
+            code => Err(err_for_error_code!(code).to_string()),
+        }
+    };
+
+    ($s: expr) => {
+       match $s {
+            0 => return Ok(()),
+            code => Err(err_for_error_code!(code).to_string()),
+        }
+    };
+}
+
+macro_rules! stat_with_Box_and_panic {
+    ($s: expr, $ptr: expr) => {
+        match $s {
+            0 => return Box::from_raw($ptr),
+            code => panic!("{}", err_for_error_code!(code)),
+        }
+    };
+}
+
 impl Matrix {
     pub fn new(rows: i32, cols: i32) -> Result<Box<Matrix>, String> {
         unsafe {
             let mut matrix_ptr: *mut Matrix = null_mut();
             let stat = matrix_init(&mut matrix_ptr, rows, cols);
-            match stat {
-                0 => Ok(Box::from_raw(matrix_ptr)),
-                -1 => Err(format!("rows {rows} or cols {cols} is less than zero")),
-                1 => Err("Malloc for matrix or array of Matrix failed".to_string()),
-                _ => Err("Unknown err!".to_string()),
-            }
+            stat_with_Result!(stat, matrix_ptr)
         }
     }
 
@@ -32,11 +64,7 @@ impl Matrix {
         unsafe {
             let mut matrix_ptr: *mut Matrix = null_mut();
             let stat = matrix_transpose(origin as *const _, &mut matrix_ptr);
-            match stat {
-                0 => Ok(Box::from_raw(matrix_ptr)),
-                1 => Err("Malloc for matrix or array of Matrix failed".to_string()),
-                _ => Err("Unknown err!".to_string()),
-            }
+            stat_with_Result!(stat, matrix_ptr)
         }
     }
 
@@ -44,49 +72,23 @@ impl Matrix {
         unsafe {
             let stat =
                 matrix_row_replace(self as *const _, index, row.as_ptr(), row.len() as c_int);
-            match stat {
-                -1 => Err(format!("index {index} is less than zero or greater than rows of matrix")),
-                _ => Ok(()),
-            }
+            stat_with_Result!(stat)
         }
     }
 
     pub fn set_item(&self, row: i32, col: i32, value: f64) -> Result<(), String> {
         unsafe {
             let stat = matrix_item_replace(self as *const _, row, col, value);
-            match stat {
-                -1 => Err(format!("{row} or {col} is less than zero or greater than the row/col of matrix")),
-                _ => Ok(()),
-            }
+            stat_with_Result!(stat)
         }
     }
 
     pub fn exchange_row(&self, row1: i32, row2: i32) -> Result<(), String> {
         unsafe {
             let stat = matrix_row_exchange(self as *const _, row1, row2);
-            match stat {
-                -1 => Err(format!("{row1} or {row2} is less than zero or greater than the row of matrix")),
-                _ => Ok(()),
-            }
+            stat_with_Result!(stat)
         }
     }
-}
-
-macro_rules! stat_with_Box_and_panic {
-    ($s: expr, $ptr: expr) => {
-        {
-            let stat: i32 = $s;
-            let matrix: *mut Matrix = $ptr;
-            match stat {
-                0 => return Box::from_raw(matrix),
-                -1 => panic!("input argument is null"),
-                -2 => panic!("alloc for Matrix failed"),
-                1 => panic!("index out of bounds"),
-                2 => panic!("rows or cols mismatched"),
-                _ => panic!("unknown error code"),
-            }
-        }
-    };
 }
 
 impl Add<&Matrix> for &Matrix {
