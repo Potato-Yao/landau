@@ -154,7 +154,7 @@ impl LaTeXExpression for Matrix {
                         .map_err(|_| "Invalid UTF-8 string")?.to_owned();
                     Ok(latex_string)
                 }
-                1 => Err("Can not alloc for str".to_string()),
+                -1 => Err("Can not alloc for str".to_string()),
                 _ => Err("Unknown err".to_string())
             }
         }

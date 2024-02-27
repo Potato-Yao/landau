@@ -149,14 +149,14 @@ int matrix_add(const Matrix *matrix1, const Matrix *matrix2, Matrix **add) {
 }
 
 int matrix_tim(const Matrix *origin, const double factor, Matrix **matrix) {
-    if (origin== NULL) return ARGUMENT_NULL_ERROR;
+    if (origin == NULL) return ARGUMENT_NULL_ERROR;
 
     Matrix *mat;
     const int stat = matrix_init(&mat, origin->rows, origin->cols);
-    if (stat != 0 ) return stat;
+    if (stat != 0) return stat;
 
-    for (int i = 0; i <origin->rows; i++) {
-        for (int j = 0; j <origin->cols; j++) {
+    for (int i = 0; i < origin->rows; i++) {
+        for (int j = 0; j < origin->cols; j++) {
             mat->data[i][j] = origin->data[i][j] * factor;
         }
     }
