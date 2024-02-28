@@ -9,13 +9,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "macro.h"
 #include "string.h"
 
 int matrix_init(Matrix **matrix, const int rows, const int cols) {
-    CHECK_INDEX_GREATER_THAN_ZERO0(rows);
-    CHECK_INDEX_GREATER_THAN_ZERO0(cols);
+    CHECK_INDEX_POSITIVE(rows);
+    CHECK_INDEX_POSITIVE(cols);
 
-    double **ptr = CHECK_ALLOCATION_NULL(sizeof(double *) * rows);
+    double **ptr = NOT_NULL_ALLOCATION(sizeof(double *) * rows);
 
     for (int i = 0; i < rows; i++) {
         double *p = malloc(sizeof(double) * cols);
@@ -35,14 +36,8 @@ int matrix_init(Matrix **matrix, const int rows, const int cols) {
         }
     }
 
-    Matrix *m = malloc(sizeof(Matrix));
-    if (m == NULL) {
-        for (int i = 0; i < rows; i++) {
-            free(ptr[i]);
-        }
-        free(ptr);
-        return ALLOCATION_FAILURE_ERROR;
-    }
+    Matrix *m = NOT_NULL_ALLOCATION_OR(sizeof(Matrix),
+                                       for (int i = 0; i < rows; i++) {free(ptr[i]);} free(ptr));
     m->rows = rows;
     m->cols = cols;
     m->data = ptr;
@@ -175,8 +170,7 @@ int matrix_mul(const Matrix *matrix1, const Matrix *matrix2, Matrix **mul) {
     CHECK_INDEX_MISMATCH(matrix1->cols, matrix2->rows);
 
     Matrix *mat;
-    const int stat = matrix_init(&mat, matrix1->rows, matrix2->cols);
-    if (stat != SUCCESS_CODE) return stat;
+    NO_ERROR_FUNC(matrix_init(&mat, matrix1->rows, matrix2->cols));
 
     for (int i = 0; i < mat->rows; i++) {
         for (int j = 0; j < mat->cols; j++) {
@@ -209,11 +203,7 @@ int matrix_latex(const Matrix *matrix, char **string) {
     }
     string_append(s, "\\end{pmatrix}\n");
 
-    char *str = malloc((s->size + 1) * sizeof(char));
-    if (str == NULL) {
-        string_destroy(s);
-        return ALLOCATION_FAILURE_ERROR;
-    }
+    char *str = NOT_NULL_ALLOCATION_OR((s->size + 1) * sizeof(char), string_destroy(s));
 
     strncpy(str, s->data, s->size);
     str[s->size] = '\0';

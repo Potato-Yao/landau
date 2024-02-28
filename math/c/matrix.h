@@ -5,28 +5,6 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#define SUCCESS_CODE 0
-#define ARGUMENT_NULL_ERROR -1
-#define ALLOCATION_FAILURE_ERROR -2
-#define INDEX_OUT_OF_BOUNDS_ERROR 1
-#define INDEX_MISMATCH_ERROR 2
-
-#define CHECK_INDEX_GREATER_THAN_ZERO0(index) if (index < 0) return ARGUMENT_NULL_ERROR
-#define CHECK_INDEX_OUT_OF_BOUNDS(index, max) if (index < 0 || index > max) return INDEX_OUT_OF_BOUNDS_ERROR
-
-#define CHECK_INDEX_MISMATCH(x, y) if (x != y) return INDEX_MISMATCH_ERROR;
-
-#define CHECK_ALLOCATION_NULL(size) \
-    ({ \
-        void *_ptr = malloc(size); \
-        if (_ptr == NULL) { \
-            return ALLOCATION_FAILURE_ERROR; \
-        } \
-        _ptr; \
-    })
-
-#define CHECK_ARGUMENT_NULL(x) if (x == NULL) return ARGUMENT_NULL_ERROR
-
 typedef struct {
     int rows;
     int cols;

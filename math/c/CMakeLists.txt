@@ -7,6 +7,8 @@ add_executable(linear_algebra library.c
         matrix.c
         string.c
         string.h
-        matrix.h)
+        matrix.h
+        macro.h
+        statcode.h)
 #add_library(linear_algebra SHARED library.c
 #        matrix.c)

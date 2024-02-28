@@ -7,40 +7,37 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "macro.h"
+
 static int string_resize(String *s, int new);
 
 int string_init(String **s) {
-    String *str = malloc(sizeof(String));
-    if (str == NULL) return 1;
+    String *str = NOT_NULL_ALLOCATION(sizeof(String));
 
     str->size = 0;
     str->capacity = 4;
-    str->data = malloc(str->capacity * sizeof(char));
-    if (str->data == NULL) {
-        free(str);
-        return 1;
-    }
+    str->data = NOT_NULL_ALLOCATION_OR(str->capacity * sizeof(char), free(str));
     str->data[0] = '\0';
     *s = str;
 
-    return 0;
+    return SUCCESS_CODE;
 }
 
 static int string_resize(String *s, const int new) {
     if (new < s->capacity) {
-        return -1;
+        return INDEX_OUT_OF_BOUNDS_ERROR;
     }
 
-    // todo realloc as multiple of 4 byte
-    char *new_data = realloc(s->data, new * sizeof(char));
-    if (new_data == NULL) {
-        return 1;
-    }
+    // realloc to the smallest number greater than 'new'
+    // in order to reduce calls to realloc
+    const int re = (new + 7) / 8 * 8;
+    char *new_data = realloc(s->data, re * sizeof(char));
+    if (new_data == NULL) return ALLOCATION_FAILURE_ERROR;
 
     s->capacity = new;
     s->data = new_data;
 
-    return 0;
+    return SUCCESS_CODE;
 }
 
 int string_append(String *s, const char *add) {
@@ -52,7 +49,7 @@ int string_append(String *s, const char *add) {
     strncat(s->data, add, s->capacity - s->size - 1);
     s->size += len;
 
-    return 0;
+    return SUCCESS_CODE;
 }
 
 int string_destroy(String *s) {
@@ -60,7 +57,7 @@ int string_destroy(String *s) {
     s->data = NULL;
     free(s);
 
-    return 0;
+    return SUCCESS_CODE;
 }
 
 char *double_to_str(const double value) {

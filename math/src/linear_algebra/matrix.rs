@@ -242,5 +242,8 @@ mod tests {
 
         let m5 = &*m1 - &*m2;
         println!("{}", m5.get_expression().unwrap());
+
+        let m6 = &*m1 * 2.5;
+        println!("{}", m6.get_expression().unwrap());
     }
 }
