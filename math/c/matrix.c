@@ -36,8 +36,14 @@ int matrix_init(Matrix **matrix, const int rows, const int cols) {
         }
     }
 
-    Matrix *m = NOT_NULL_ALLOCATION_OR(sizeof(Matrix),
-                                       for (int i = 0; i < rows; i++) {free(ptr[i]);} free(ptr));
+    Matrix *m = malloc(sizeof(Matrix));
+    if (m == NULL) {
+        for (int i = 0; i < rows; i++) {
+            free(ptr[i]);
+        }
+        free(ptr);
+    }
+
     m->rows = rows;
     m->cols = cols;
     m->data = ptr;
@@ -47,7 +53,7 @@ int matrix_init(Matrix **matrix, const int rows, const int cols) {
 }
 
 int matrix_destroy(Matrix *matrix) {
-    CHECK_ARGUMENT_NULL(matrix->data);
+    CHECK_ARGUMENT_NOT_NULL(matrix->data);
 
     for (int i = 0; i < matrix->rows; i++) {
         free(matrix->data[i]);
@@ -62,7 +68,7 @@ int matrix_destroy(Matrix *matrix) {
 }
 
 int matrix_row_replace(const Matrix *matrix, const int index, const double *row, const int sz) {
-    CHECK_ARGUMENT_NULL(matrix->data);
+    CHECK_ARGUMENT_NOT_NULL(matrix->data);
     CHECK_INDEX_OUT_OF_BOUNDS(index, matrix->rows);
 
     for (int i = 0; i < matrix->cols && i < sz; i++) {
@@ -73,7 +79,7 @@ int matrix_row_replace(const Matrix *matrix, const int index, const double *row,
 }
 
 int matrix_item_replace(const Matrix *matrix, const int row, const int col, const double value) {
-    CHECK_ARGUMENT_NULL(matrix->data);
+    CHECK_ARGUMENT_NOT_NULL(matrix->data);
     CHECK_INDEX_OUT_OF_BOUNDS(row, matrix->rows);
     CHECK_INDEX_OUT_OF_BOUNDS(col, matrix->cols);
 
@@ -100,7 +106,7 @@ int matrix_identity_matrix(Matrix **matrix, const int dimension) {
 }
 
 int matrix_row_exchange(const Matrix *matrix, const int row1, const int row2) {
-    CHECK_ARGUMENT_NULL(matrix->data);
+    CHECK_ARGUMENT_NOT_NULL(matrix->data);
     CHECK_INDEX_OUT_OF_BOUNDS(row1, matrix->rows);
     CHECK_INDEX_OUT_OF_BOUNDS(row2, matrix->rows);
     if (row1 == row2) return SUCCESS_CODE;
@@ -128,8 +134,8 @@ int matrix_transpose(const Matrix *origin, Matrix **matrix) {
 }
 
 int matrix_add(const Matrix *matrix1, const Matrix *matrix2, Matrix **add) {
-    CHECK_ARGUMENT_NULL(matrix1->data);
-    CHECK_ARGUMENT_NULL(matrix2->data);
+    CHECK_ARGUMENT_NOT_NULL(matrix1->data);
+    CHECK_ARGUMENT_NOT_NULL(matrix2->data);
     CHECK_INDEX_MISMATCH(matrix1->cols, matrix2->cols);
     CHECK_INDEX_MISMATCH(matrix1->rows, matrix2->rows);
 
@@ -148,7 +154,7 @@ int matrix_add(const Matrix *matrix1, const Matrix *matrix2, Matrix **add) {
 }
 
 int matrix_tim(const Matrix *origin, const double factor, Matrix **matrix) {
-    CHECK_ARGUMENT_NULL(origin);
+    CHECK_ARGUMENT_NOT_NULL(origin);
 
     Matrix *mat;
     const int stat = matrix_init(&mat, origin->rows, origin->cols);
@@ -165,8 +171,8 @@ int matrix_tim(const Matrix *origin, const double factor, Matrix **matrix) {
 }
 
 int matrix_mul(const Matrix *matrix1, const Matrix *matrix2, Matrix **mul) {
-    CHECK_ARGUMENT_NULL(matrix1->data);
-    CHECK_ARGUMENT_NULL(matrix2->data);
+    CHECK_ARGUMENT_NOT_NULL(matrix1->data);
+    CHECK_ARGUMENT_NOT_NULL(matrix2->data);
     CHECK_INDEX_MISMATCH(matrix1->cols, matrix2->rows);
 
     Matrix *mat;
@@ -185,7 +191,7 @@ int matrix_mul(const Matrix *matrix1, const Matrix *matrix2, Matrix **mul) {
 }
 
 int matrix_latex(const Matrix *matrix, char **string) {
-    CHECK_ARGUMENT_NULL(matrix);
+    CHECK_ARGUMENT_NOT_NULL(matrix);
 
     String *s;
     string_init(&s);

@@ -28,7 +28,7 @@ static int string_resize(String *s, const int new) {
         return INDEX_OUT_OF_BOUNDS_ERROR;
     }
 
-    // realloc to the smallest number greater than 'new'
+    // realloc to the smallest multiple of eight that greater than 'new'
     // in order to reduce calls to realloc
     const int re = (new + 7) / 8 * 8;
     char *new_data = realloc(s->data, re * sizeof(char));

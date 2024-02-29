@@ -32,6 +32,6 @@
         } \
     })
 
-#define CHECK_ARGUMENT_NULL(x) if (x == NULL) return ARGUMENT_NULL_ERROR
+#define CHECK_ARGUMENT_NOT_NULL(x) if (x == NULL) return ARGUMENT_NULL_ERROR
 
 #endif //MACRO_H
