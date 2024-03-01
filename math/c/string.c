@@ -61,9 +61,8 @@ int string_destroy(String *s) {
 }
 
 char *double_to_str(const double value) {
-    char *str;
     const int size = snprintf(NULL, 0, "%.*f", CAST_PRECISION, value) + 1;
-    str = malloc(size * sizeof(char));
+    char *str = malloc(size * sizeof(char));
 
     snprintf(str, size, "%.*f", CAST_PRECISION, value);
     return str;

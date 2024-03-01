@@ -4,6 +4,7 @@
 
 #include "matrix.h"
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,6 +45,7 @@ int matrix_init(Matrix **matrix, const int rows, const int cols) {
         free(ptr);
     }
 
+    assert(m != NULL);
     m->rows = rows;
     m->cols = cols;
     m->data = ptr;
