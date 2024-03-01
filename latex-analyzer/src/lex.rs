@@ -5,13 +5,26 @@ use std::io::{Read};
 use lazy_static::lazy_static;
 
 lazy_static! {
+    pub static ref INTEGRATION_SYMBOL: Vec<String> = {
+        vec!["int".to_string(), "iiint".to_string(), "iiiint".to_string(),
+        "idotsint".to_string(), "oint".to_string(), "intclockwise".to_string(),
+        "intcounterclockwise".to_string()]
+    };
+
     // we call \int, \sum and \prod as huge symbol
-    static ref HUGE_SYMBOL: Vec<String> = {
-        vec!["int".to_string(), "sum".to_string(), "prod".to_string()]
+    pub static ref HUGE_SYMBOL: Vec<String> = {
+        let mut v = vec!["sum".to_string(), "prod".to_string()];
+        v.extend(INTEGRATION_SYMBOL.iter().cloned());
+
+        v
+    };
+
+    pub static ref DIFFERENTIAL_SYMBOL: Vec<String> = {
+        vec!["di".to_string(), "pa".to_string()]
     };
 
     // some symbols are used for decoration, such as \left and \right
-    static ref IGNORE_SYMBOL: Vec<String> = {
+    pub static ref IGNORE_SYMBOL: Vec<String> = {
         vec!["left".to_string(), "right".to_string()]
     };
 }
@@ -133,7 +146,20 @@ impl Lex {
                             (sub, sup),
                         _ => return Err(format!("function {fun} miss args!")),
                     };
-                    vec.push(Token::Function(fun, vec![sub, sup], vec![]))
+
+                    let mut addition_fun = Vec::new();
+                    if INTEGRATION_SYMBOL.contains(&fun) {
+                        match (proto.next(), proto.next()) {
+                            (Some(Token::Expression(ex)), Some(Token::Function(fu, _, va)))
+                            if DIFFERENTIAL_SYMBOL.contains(&fu) => {
+                                addition_fun.push(ex);
+                                addition_fun.extend(va.into_iter());
+                            }
+                            _ => return Err(format!("integration {} doesn't match the standard form!", &fun))
+                        };
+                    }
+
+                    vec.push(Token::Function(fun, vec![sub, sup], addition_fun))
                 }
                 Token::Var(_) => var_stack.push(po),
                 t => {
@@ -178,7 +204,7 @@ impl Lex {
                 Token::Expression(self.read_pure_number())
             }
             '{' => Token::Expression(self.read_until_brace_r()),
-            '}' => Token::BraceR,
+            '}' => self.next(),
             '\\' => {
                 let t = self.read_function();
                 match t {
@@ -187,7 +213,7 @@ impl Lex {
                             Token::Var(re.remove(0))
                         } else {
                             Token::Function(fun, op, re)
-                        }
+                        };
                     }
                     _ => t  // maybe Expression
                 }
@@ -472,6 +498,17 @@ mod tests {
     #[test]
     fn parse_test7() {
         let test = r"a+1\var{a=1}".to_string();
+        let mut l = Lex::new(test);
+        let v = l.parse();
+
+        for i in v {
+            println!("{:?}", i);
+        }
+    }
+
+    #[test]
+    fn parse_test8() {
+        let test = r"\int_a^b{x^2 + 3x + 6}\di{x}".to_string();
         let mut l = Lex::new(test);
         let v = l.parse();
 
