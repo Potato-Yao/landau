@@ -85,6 +85,10 @@ pub struct Lex {
 
 impl Lex {
     pub fn new(input: String) -> Self {
+        Lex::from_ref(&input)
+    }
+
+    pub fn from_ref(input: &String) -> Self {
         let mut v: Vec<char> = input.chars().collect();
         v.push('\0');
 

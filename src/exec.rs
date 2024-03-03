@@ -80,6 +80,7 @@ impl Exec {
             (Ok(l), Ok(r)) => (l, r),
             (l, r) => return Err(format!("Node {l:?} or {r:?} can not be evaluated!")),
         };
+        eprintln!("{left} and {right}");
 
         let Some(ref op) = node.op else {
             return Err(format!("Can not get op from {:?}", node));
@@ -141,5 +142,13 @@ mod tests {
         let exec = Exec::from_lex(lex);
 
         assert_eq!(exec.calculate().unwrap(), 2.0);
+    }
+
+    #[test]
+    fn exec_test5() {
+        let lex = Lex::new(r"\frac{a + b}{c}\var{a=1}\var{b=1.5}\var{c=2}".to_string());
+        let exec = Exec::from_lex(lex);
+
+        assert_eq!(exec.calculate().unwrap(), 5.0/4.0);
     }
 }

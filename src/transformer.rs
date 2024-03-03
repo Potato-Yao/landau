@@ -2,16 +2,20 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use crate::known::Known;
 
-pub fn strings_to_known(v: &Vec<String>) -> Vec<Box<dyn Known>>{
+lazy_static! {
+    // match numbers, such as 1 or 1.1
+    static ref PURE_NUMBER: Regex = Regex::new(r"-?\d+(\.\d+)?").unwrap();
+}
+
+pub fn strings_to_known(v: &Vec<String>) -> Vec<Box<dyn Known>> {
     v.iter().map(|s| string_to_known(s).unwrap()).collect()
 }
 
-pub fn string_to_known(s: &String) -> Option<Box<dyn Known>>  {
-    lazy_static! {
-        // match numbers, such as 1 or 1.1
-        static ref PURE_NUMBER: Regex = Regex::new(r"-?\d+(\.\d+)?").unwrap();
+pub fn string_to_known(s: &String) -> Option<Box<dyn Known>> {
+    #[cfg(debug_assertions)]
+    {
+        eprintln!("i catch: {s}");
     }
-
     if PURE_NUMBER.is_match(s) {
         return Some(Box::new(s.parse::<f64>().unwrap()));
     }
